@@ -1,0 +1,62 @@
+.container {
+  padding: 20px;
+  position: relative;
+}
+
+.tabs {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 10px;
+  border-bottom: 1px solid #ccc;
+}
+
+.tabButton {
+  padding: 8px;
+  font-size: 16px;
+  background: none;
+  border: none;
+  color: #888;
+  cursor: pointer;
+}
+
+.active {
+  color: black;
+  font-weight: bold;
+  border-bottom: 2px solid black;
+}
+
+.title {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.postList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* 팬 아이콘 버튼 */
+.writeButton {
+  position: fixed;
+  bottom: 80px;
+  right: 20px;
+  background-color: #7B61FF;
+  border: none;
+  border-radius: 50%;
+  padding: 12px;
+  width: 48px;
+  height: 48px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.writeButton img {
+  width: 22px;
+  height: 22px;
+  filter: invert(100%);
+}
+

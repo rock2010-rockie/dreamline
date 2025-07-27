@@ -1,0 +1,24 @@
+.navbar {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  background: white;
+  border-top: 1px solid #ddd;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 10px 0;
+  z-index: 100;
+}
+
+.icon {
+  width: 24px;
+  height: 24px;
+  opacity: 0.5;
+}
+
+.active {
+  width: 24px;
+  height: 24px;
+  opacity: 1;
+}

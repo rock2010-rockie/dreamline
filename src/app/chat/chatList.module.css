@@ -1,0 +1,39 @@
+.container {
+  padding: 20px;
+}
+
+.title {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 16px;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  background: white;
+}
+
+.avatar {
+  font-size: 28px;
+}
+
+.name {
+  font-weight: bold;
+  font-size: 15px;
+}
+
+.sub {
+  color: gray;
+  font-size: 12px;
+}

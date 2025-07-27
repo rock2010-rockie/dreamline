@@ -1,0 +1,73 @@
+.container {
+  padding: 20px;
+}
+
+.title {
+  font-weight: bold;
+  font-size: 18px;
+  margin-bottom: 16px;
+}
+
+.empty {
+  color: gray;
+  text-align: center;
+  margin-top: 50px;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid #eee;
+  border-radius: 12px;
+  padding: 16px;
+  background-color: white;
+}
+
+.userInfo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.avatar {
+  font-size: 30px;
+}
+
+.name {
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.career {
+  font-size: 13px;
+  color: #666;
+}
+
+.buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.accept {
+  background-color: #7B61FF;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 14px;
+}
+
+.reject {
+  background-color: #eee;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 14px;
+}

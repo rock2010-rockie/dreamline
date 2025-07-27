@@ -1,0 +1,30 @@
+.card {
+  display: block;
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 12px;
+  text-decoration: none;
+  color: black;
+  box-shadow: 0px 1px 4px rgba(0,0,0,0.05);
+}
+
+.card * {
+  text-decoration: none !important;
+  color: black !important;
+}
+
+.category {
+  font-size: 13px;
+  color: gray;
+  margin-bottom: 4px;
+}
+
+.title {
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

@@ -1,0 +1,34 @@
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+ 
+  
+  position: relative;
+}
+
+.title {
+  font-size: 20px;
+  font-weight: bold;
+  color: #7B61FF;
+}
+
+.bellWrapper {
+  position: relative;
+}
+
+.bell {
+  width: 24px;
+  height: 24px;
+}
+
+.redDot {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 8px;
+  height: 8px;
+  background-color: red;
+  border-radius: 50%;
+}

@@ -1,0 +1,92 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  padding: 24px 16px;
+  gap: 16px;
+}
+
+.title {
+  font-weight: bold;
+  font-size: 18px;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+}
+
+.label {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.dropdownRow {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.selectBox {
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 14px;
+  flex: 1;
+  min-width: 30%;
+}
+
+.searchButton {
+  background-color: #7B61FF;
+  color: white;
+  padding: 12px 0;
+  border-radius: 20px;
+  font-size: 15px;
+  font-weight: bold;
+  border: none;
+  margin-top: 12px;
+}
+
+.resultSection {
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.card {
+  display: flex;
+  align-items: center;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  padding: 14px 16px;
+  background-color: white;
+}
+
+.profileIcon {
+  font-size: 28px;
+  margin-right: 12px;
+}
+
+.profileInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.name {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.detail {
+  font-size: 13px;
+  color: #666;
+}
+
+.noResult {
+  color: #aaa;
+  text-align: center;
+  font-size: 14px;
+  margin-top: 50px;
+}
