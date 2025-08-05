@@ -2,23 +2,28 @@
 
 import styles from './Header.module.css'
 import { useEffect, useState } from 'react'
+import { usePathname, useRouter } from 'next/navigation'
 import { auth, db } from '@/lib/firebase'
 import {
   collection,
   query,
   where,
   onSnapshot,
-  doc,
-  getDoc,
-  Unsubscribe
+  Unsubscribe,
 } from 'firebase/firestore'
-import { useRouter } from 'next/navigation'
 
 export default function Header() {
   const [hasNewRequest, setHasNewRequest] = useState(false)
   const router = useRouter()
+  const pathname = usePathname()
+
+  // 특정 경로에서는 Header 숨기기
+  const hiddenRoutes = ['/', '/login', '/signup', '/splash']
+  const shouldHide = hiddenRoutes.includes(pathname) || pathname.startsWith('/chat')
 
   useEffect(() => {
+    if (shouldHide) return
+
     let unsubscribeRequest: Unsubscribe | null = null
     const unsubscribeAuth = auth.onAuthStateChanged(async (user) => {
       if (!user) {
@@ -28,8 +33,6 @@ export default function Header() {
       }
 
       const uid = user.uid
-
-      // 요청 받은 사람인 경우만 빨간점 표시
       const q = query(
         collection(db, 'requests'),
         where('to', '==', uid),
@@ -45,11 +48,13 @@ export default function Header() {
       if (unsubscribeRequest) unsubscribeRequest()
       unsubscribeAuth()
     }
-  }, [])
+  }, [shouldHide])
 
   const handleBellClick = () => {
     router.push('/request')
   }
+
+  if (shouldHide) return null
 
   return (
     <header className={styles.header}>

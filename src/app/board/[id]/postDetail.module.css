@@ -1,0 +1,170 @@
+.container {
+  padding: 16px;
+}
+
+.backBtn {
+  font-size: 20px;
+  background: none;
+  border: none;
+  margin-bottom: 8px;
+}
+
+.title {
+  font-weight: bold;
+  font-size: 18px;
+  margin-bottom: 8px;
+}
+
+.image {
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+.content {
+  margin-bottom: 12px;
+}
+
+.divider {
+  border-top: 1px solid #ccc;
+  margin: 12px 0;
+}
+
+.userInfo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.userIcon {
+  width: 28px;
+  height: 28px;
+  margin-right: 8px;
+}
+
+.nameBox {
+  flex: 1;
+}
+
+.name {
+  font-weight: bold;
+}
+
+.role {
+  font-size: 12px;
+  color: gray;
+}
+
+.likeBox {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.heartIcon {
+  width: 20px;
+  height: 20px;
+  margin-right: 4px;
+}
+
+.likeCount {
+  font-size: 14px;
+}
+
+.comment {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.commentIcon {
+  width: 24px;
+  height: 24px;
+}
+
+.commentAuthor {
+  font-size: 13px;
+  color: #333;
+  margin-bottom: 4px;
+}
+
+.commentInputBox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.commentInput {
+  flex: 1;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+.submitBtn {
+  background-color: #7B61FF;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+}
+
+.authorBadge {
+  margin-left: 4px;
+  font-size: 12px;
+  color: gray;
+  font-weight: normal;
+}
+
+.container {
+  padding: 16px;
+}
+
+.backBtn {
+  margin-bottom: 12px;
+}
+
+.userInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px; /* 글쓴이 아래 여백 */
+}
+
+.title {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 8px; /* 제목과 본문 사이 여백 */
+}
+
+.content {
+  margin-bottom: 16px; /* 본문과 좋아요 사이 여백 */
+}
+
+.divider {
+  margin: 16px 0; /* 구분선 위아래 여백 */
+}
+
+.likeBox {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 20px; /* 좋아요와 댓글 사이 */
+  margin-left: 310px
+}
+
+.comment {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.commentAuthor {
+  margin-bottom: 4px;
+}
+
+.commentInputBox {
+  margin-top: 20px;
+  display: flex;
+  gap: 8px;
+}

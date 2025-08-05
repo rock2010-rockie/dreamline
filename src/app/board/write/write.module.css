@@ -67,3 +67,11 @@
   height: 28px;
   cursor: pointer;
 }
+.fixedCategory {
+  font-size: 15px;
+  font-weight: 500;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: #333;
+}

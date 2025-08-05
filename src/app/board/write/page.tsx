@@ -1,9 +1,19 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { addDoc, collection, doc, getDoc, serverTimestamp } from 'firebase/firestore'
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
+import {
+  addDoc,
+  collection,
+  doc,
+  getDoc,
+  serverTimestamp,
+} from 'firebase/firestore'
+import {
+  ref,
+  uploadBytes,
+  getDownloadURL,
+} from 'firebase/storage'
 import { auth, db, storage } from '@/lib/firebase'
 import { categoryData } from '@/data/categoryData'
 import styles from './write.module.css'
@@ -11,7 +21,7 @@ import styles from './write.module.css'
 export default function WritePage() {
   const router = useRouter()
 
-  const [category, setCategory] = useState('')
+  const [role, setRole] = useState<'mentor' | 'student' | null>(null)
   const [major, setMajor] = useState('')
   const [middle, setMiddle] = useState('')
   const [minor, setMinor] = useState('')
@@ -23,6 +33,22 @@ export default function WritePage() {
   const middleList = major ? Object.keys(categoryData[major] || {}) : []
   const minorList = major && middle ? categoryData[major][middle] || [] : []
 
+  // 역할 불러오기
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      if (!user) return
+
+      const docRef = doc(db, 'users', user.uid)
+      const snapshot = await getDoc(docRef)
+      const data = snapshot.data()
+
+      if (data?.role === 'mentor') setRole('mentor')
+      else setRole('student')
+    })
+
+    return () => unsubscribe()
+  }, [])
+
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.[0]) {
       setImage(e.target.files[0])
@@ -30,10 +56,12 @@ export default function WritePage() {
   }
 
   const handleSubmit = async () => {
-    if (!category || !title || !content || !major || !middle || !minor) {
+    if (!role || !title || !content || !major || !middle || !minor) {
       alert('모든 항목을 입력해주세요.')
       return
     }
+
+    const category = role === 'mentor' ? '멘토소식' : '궁금해요'
 
     try {
       const user = auth.currentUser
@@ -42,7 +70,10 @@ export default function WritePage() {
       let imageUrl = ''
 
       if (image) {
-        const imageRef = ref(storage, `boardImages/${Date.now()}_${image.name}`)
+        const imageRef = ref(
+          storage,
+          `boardImages/${Date.now()}_${image.name}`
+        )
         await uploadBytes(imageRef, image)
         imageUrl = await getDownloadURL(imageRef)
       }
@@ -82,15 +113,12 @@ export default function WritePage() {
         </button>
       </div>
 
-      <select
-        className={styles.select}
-        value={category}
-        onChange={(e) => setCategory(e.target.value)}
-      >
-        <option value="">게시글 유형</option>
-        <option value="궁금해요">궁금해요</option>
-        <option value="멘토소식">멘토소식</option>
-      </select>
+      {/* 게시글 유형 자동 텍스트 표시 */}
+      {role && (
+        <div className={styles.fixedCategory}>
+          게시글 유형 · {role === 'mentor' ? '멘토소식' : '궁금해요'}
+        </div>
+      )}
 
       {/* 분류 선택 */}
       <select
