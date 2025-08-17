@@ -1,0 +1,127 @@
+.container {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 16px 40px;
+  background: #fff;
+}
+
+.header {
+  position: sticky;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+  background: #fff;
+  border-bottom: 1px solid #eee;
+  z-index: 5;
+}
+
+.back {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: #111;
+  cursor: pointer;
+}
+
+.title {
+  font-weight: 800;
+  font-size: 18px;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-top: 12px;
+}
+
+.section {
+  border: 1px solid #eee;
+  border-radius: 14px;
+  padding: 16px;
+  background: #fafafa;
+}
+
+.sectionTitle {
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+  font-size: 14px;
+  color: #333;
+}
+
+.smallLabel {
+  font-size: 12px;
+  color: #555;
+  margin-bottom: 6px;
+}
+
+.input,
+.select,
+.textarea {
+  width: 100%;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 14px;
+  background: #fff;
+  outline: none;
+}
+
+.input:focus,
+.select:focus,
+.textarea:focus {
+  border-color: #7B61FF;
+  box-shadow: 0 0 0 3px rgba(123, 97, 255, 0.15);
+}
+
+.grid3 {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+@media (min-width: 600px) {
+  .grid3 { grid-template-columns: 1fr 1fr 1fr; }
+}
+
+.saveBtn {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 12px;
+  background: #7B61FF;
+  color: #fff;
+  font-weight: 700;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.saveBtn:disabled { opacity: .6; cursor: default; }
+
+/* 기존 내용 그대로 두고, 아래만 추가 */
+
+.required {
+  color: #d00;
+  font-weight: 700;
+  margin-left: 4px;
+}
+
+.errorText {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #d00;
+}
+
+.invalid {
+  border-color: #d00 !important;
+  box-shadow: 0 0 0 3px rgba(208, 0, 0, 0.08) !important;
+}

@@ -39,7 +39,7 @@ export default function PostDetailPage() {
       const data = snapshot.data()
       if (!data) return
       setPost(data)
-      setLikesCount(data.likes?.length || [])
+      setLikesCount(data.likes?.length || 0) // ← [] 대신 0으로 안전하게
 
       const user = auth.currentUser
       if (user && data.likes?.includes(user.uid)) {
@@ -72,15 +72,11 @@ export default function PostDetailPage() {
     const postRef = doc(db, 'posts', id as string)
 
     if (liked) {
-      await updateDoc(postRef, {
-        likes: arrayRemove(user.uid),
-      })
+      await updateDoc(postRef, { likes: arrayRemove(user.uid) })
       setLiked(false)
       setLikesCount((prev) => prev - 1)
     } else {
-      await updateDoc(postRef, {
-        likes: arrayUnion(user.uid),
-      })
+      await updateDoc(postRef, { likes: arrayUnion(user.uid) })
       setLiked(true)
       setLikesCount((prev) => prev + 1)
     }
@@ -111,7 +107,7 @@ export default function PostDetailPage() {
         &lt;
       </button>
 
-      {/* ✅ 글쓴이 정보 (위로 이동) */}
+      {/* 글쓴이 */}
       <div className={styles.userInfo}>
         <img src="/user.svg" alt="유저 아이콘" className={styles.userIcon} />
         <div className={styles.nameBox}>
@@ -136,7 +132,8 @@ export default function PostDetailPage() {
       {/* 본문 */}
       <p className={styles.content}>{post.content}</p>
 
-      <hr className={styles.divider} />
+
+      
 
       {/* 좋아요 */}
       <div className={styles.likeBox} onClick={handleLike}>
@@ -147,6 +144,9 @@ export default function PostDetailPage() {
         />
         <span className={styles.likeCount}>{likesCount}</span>
       </div>
+
+      {/* ✅ 하트와 댓글 사이 구분선 추가 */}
+      <hr className={styles.sectionDivider} />
 
       {/* 댓글 목록 */}
       {comments.map((c) => (

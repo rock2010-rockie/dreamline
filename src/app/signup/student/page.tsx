@@ -4,12 +4,12 @@ import styles from './student.module.css'
 import { useState } from 'react'
 import { categoryData } from '@/data/categoryData';
 
-
-
 import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
+
+const removeNumberPrefix = (text: string) => text.replace(/^\d+\.\s*/, '')
 
 export default function StudentSignupPage() {
   const [name, setName] = useState('')
@@ -26,24 +26,31 @@ export default function StudentSignupPage() {
   const minorList = major && middle ? categoryData[major][middle] || [] : []
 
   const handleSubmit = async () => {
+    // 이름/이메일/비밀번호/나이만 필수, 분류는 선택
     if (!name || !email || !password || !age) {
-      alert('모든 정보를 입력해주세요.');
+      alert('이름, 나이, 이메일, 비밀번호는 필수입니다.');
       return;
     }
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
-      await setDoc(doc(db, 'users', user.uid), {
+
+      // 선택값은 있을 때만 저장하도록 payload 구성
+      const payload: Record<string, any> = {
         uid: user.uid,
-        name,
-        age,
-        email,
-        major,
-        middle,
-        minor,
         role: 'student',
-        createdAt: new Date(),
-      });
+        name,
+        email,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      };
+      // 숫자 변환 가능한 age만 저장
+      if (age.trim() !== '' && !Number.isNaN(Number(age))) payload.age = Number(age);
+      if (major) payload.major = major;
+      if (middle) payload.middle = middle;
+      if (minor) payload.minor = minor;
+
+      await setDoc(doc(db, 'users', user.uid), payload, { merge: true });
 
       router.push('/login');
     } catch (error: any) {
@@ -87,7 +94,8 @@ export default function StudentSignupPage() {
         onChange={(e) => setPassword(e.target.value)}
       />
 
-      <div className={styles.sectionTitle}>관심사/관심진로</div>
+      {/* 라벨 문구 변경 */}
+      <div className={styles.sectionTitle}>관심사/관심진로 (선택)</div>
 
       <select
         className={styles.input}
@@ -101,7 +109,7 @@ export default function StudentSignupPage() {
         <option value="">대분류</option>
         {majorList.map((item) => (
           <option key={item} value={item}>
-            {item}
+            {removeNumberPrefix(item)}
           </option>
         ))}
       </select>
@@ -115,10 +123,10 @@ export default function StudentSignupPage() {
         }}
         disabled={!major}
       >
-        <option value="">중분류</option>
+        <option value="">{major ? '중분류' : '대분류 먼저'}</option>
         {middleList.map((item) => (
           <option key={item} value={item}>
-            {item}
+            {removeNumberPrefix(item)}
           </option>
         ))}
       </select>
@@ -129,10 +137,10 @@ export default function StudentSignupPage() {
         onChange={(e) => setMinor(e.target.value)}
         disabled={!middle}
       >
-        <option value="">소분류</option>
+        <option value="">{middle ? '소분류' : '중분류 먼저'}</option>
         {minorList.map((item) => (
           <option key={item} value={item}>
-            {item}
+            {removeNumberPrefix(item)}
           </option>
         ))}
       </select>
@@ -143,6 +151,3 @@ export default function StudentSignupPage() {
     </div>
   )
 }
-
-
-

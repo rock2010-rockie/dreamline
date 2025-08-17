@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { auth, db, storage } from '@/lib/firebase'
+import { auth, db } from '@/lib/firebase'
 import {
   collection,
   doc,
@@ -14,11 +14,6 @@ import {
   updateDoc,
   arrayUnion,
 } from 'firebase/firestore'
-import {
-  ref,
-  uploadBytes,
-  getDownloadURL,
-} from 'firebase/storage'
 import styles from './chatPage.module.css'
 
 interface Message {
@@ -30,6 +25,16 @@ interface Message {
   readBy?: string[]
 }
 
+interface Assignment {
+  title: string
+  content: string
+  steps: string[]
+  progress: number
+  isCompleted: boolean
+  createdBy: string
+  createdAt?: any
+}
+
 export default function ChatRoomPage() {
   const { chatId } = useParams()
   const router = useRouter()
@@ -38,8 +43,25 @@ export default function ChatRoomPage() {
   const [otherName, setOtherName] = useState('')
   const [otherUserId, setOtherUserId] = useState<string | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
-  const fileInputRef = useRef<HTMLInputElement | null>(null)
   const currentUser = auth.currentUser
+
+  // --- 과제 관련 상태 ---
+  const [assignment, setAssignment] = useState<Assignment | null>(null)
+  const [isTaskExpanded, setIsTaskExpanded] = useState(false)
+
+  // --- + 메뉴 ---
+  const [showTaskMenu, setShowTaskMenu] = useState(false)
+
+  // --- 역할 ---
+  const [userRole, setUserRole] = useState<string | null>(null)
+  const isMentor = userRole === 'mentor' || userRole === '멘토'
+
+  // 역할 불러오기
+  useEffect(() => {
+    const u = auth.currentUser
+    if (!u) return
+    getDoc(doc(db, 'users', u.uid)).then(s => setUserRole(s.data()?.role || null))
+  }, [])
 
   // ✅ 상대방 정보 가져오기
   useEffect(() => {
@@ -50,7 +72,6 @@ export default function ChatRoomPage() {
       const chatData = chatDoc.data()
       if (!chatData) return
 
-      // ✅ participants 배열에서 내 UID가 아닌 값 찾기
       const participants = chatData.participants as string[]
       if (!participants || participants.length !== 2) return
 
@@ -108,6 +129,36 @@ export default function ChatRoomPage() {
     }
   }, [messages])
 
+  // 과제 실시간 구독
+  useEffect(() => {
+    if (!chatId) return
+    const ref = doc(db, 'chats', chatId as string, 'assignment', 'current')
+    const unsub = onSnapshot(ref, (snap) => {
+      if (!snap.exists()) {
+        setAssignment(null)
+        return
+      }
+      const raw = snap.data() as Partial<Assignment>
+      const progressNum = Math.min(100, Math.max(0, Number(raw.progress ?? 0)))
+      const data: Assignment = {
+        title: String(raw.title ?? ''),
+        content: String(raw.content ?? ''),
+        steps: Array.isArray(raw.steps) ? (raw.steps as string[]) : [],
+        progress: progressNum,
+        isCompleted: Boolean(raw.isCompleted ?? progressNum >= 100),
+        createdBy: String(raw.createdBy ?? ''),
+        createdAt: raw.createdAt,
+      }
+
+      if (data.isCompleted || data.progress >= 100) {
+        setAssignment(null)
+      } else {
+        setAssignment(data)
+      }
+    }, () => setAssignment(null))
+    return () => unsub()
+  }, [chatId])
+
   const sendMessage = async () => {
     if (!input.trim() || !chatId || !currentUser) return
 
@@ -121,23 +172,24 @@ export default function ChatRoomPage() {
     setInput('')
   }
 
+  // + 버튼: 멘토만 토글 가능
   const handlePlusClick = () => {
-    fileInputRef.current?.click()
+    if (!isMentor) return
+    setShowTaskMenu(prev => !prev)
   }
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file || !chatId || !currentUser) return
+  // 과제 주기 페이지로 이동
+  const handleAssignTask = () => {
+    setShowTaskMenu(false)
+    router.push(`/chat/${chatId}/task`)
+  }
 
-    const storageRef = ref(storage, `chatImages/${chatId}/${Date.now()}_${file.name}`)
-    await uploadBytes(storageRef, file)
-    const url = await getDownloadURL(storageRef)
-
-    await addDoc(collection(db, 'chats', chatId as string, 'messages'), {
-      sender: currentUser.uid,
-      imageUrl: url,
-      timestamp: new Date(),
-      readBy: [currentUser.uid],
+  // 진행률 업데이트 (멘토만)
+  const updateProgress = async (value: number) => {
+    if (!isMentor || !chatId) return
+    await updateDoc(doc(db, 'chats', chatId as string, 'assignment', 'current'), {
+      progress: value,
+      isCompleted: value >= 100,
     })
   }
 
@@ -164,7 +216,15 @@ export default function ChatRoomPage() {
     )
   }
 
-  // ✅ 로딩 중 처리
+  // ✅ 추가: 과제 패널 클릭 시 동작 (1회: 펼치기, 2회: 상세 페이지 이동)
+  const handleTaskClick = () => {
+    if (!isTaskExpanded) {
+      setIsTaskExpanded(true)
+    } else {
+      router.push(`/chat/${chatId}/task/detail`)
+    }
+  }
+
   if (!currentUser || !otherUserId) return <div>로딩 중...</div>
 
   return (
@@ -173,6 +233,75 @@ export default function ChatRoomPage() {
         <button className={styles.back} onClick={() => router.back()}>←</button>
         <div className={styles.name}>{otherName}</div>
       </div>
+
+      {/* 상단 과제 패널 */}
+      {assignment && (
+        <div className={styles.taskWrap}>
+          {/* 1) 위 바: 열고/닫기 전용 */}
+          <div
+            className={styles.taskBar}
+            onClick={() => setIsTaskExpanded(prev => !prev)}  // ← 토글만!
+          >
+            <span className={styles.taskBarTitle}>
+              {assignment.title || '과제제목이 이 부분에 들어간다.'}
+            </span>
+            <button
+              className={styles.chevron}
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsTaskExpanded(prev => !prev);
+              }}
+            >
+              {isTaskExpanded ? '▲' : '▼'}
+            </button>
+          </div>
+
+          {/* 2) 아래 패널: 클릭하면 상세 페이지로 이동 */}
+          {isTaskExpanded && (
+            <div
+              className={styles.taskPanel}
+              onClick={() => router.push(`/chat/${chatId}/task/detail`)}
+            >
+              <div className={styles.taskTitle}>{assignment.title}</div>
+              <div className={styles.taskContent}>{assignment.content}</div>
+
+              {/* 슬라이더 조작 중에는 이동하지 않도록 클릭 버블링 막기 */}
+              <div
+                className={styles.sliderRow}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <span className={styles.sliderValue}>{assignment.progress}</span>
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  step={10}
+                  value={assignment.progress}
+                  onChange={(e) => updateProgress(parseInt(e.target.value))}
+                  disabled={!isMentor}
+                  className={styles.slider}
+                  onClick={(e) => e.stopPropagation()}  // ← 보호
+                />
+              </div>
+
+              <div
+                className={styles.taskPanelFooter}
+                onClick={(e) => e.stopPropagation()}   // ← 접기 버튼 눌러도 페이지 이동 안되게
+              >
+                <button
+                  className={styles.collapse}
+                  type="button"
+                  onClick={() => setIsTaskExpanded(false)}
+                >
+                  ▲
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
 
       <div className={styles.chatArea}>
         {messages.length === 0 ? (
@@ -224,15 +353,22 @@ export default function ChatRoomPage() {
         <div ref={bottomRef}></div>
       </div>
 
+      {/* 입력 영역 */}
       <div className={styles.inputArea}>
-        <button className={styles.plus} onClick={handlePlusClick}>＋</button>
-        <input
-          type="file"
-          accept="image/*"
-          ref={fileInputRef}
-          style={{ display: 'none' }}
-          onChange={handleFileChange}
-        />
+        {/* 멘토일 때만 + 버튼 / 메뉴 노출 */}
+        {isMentor && (
+          <>
+            <button className={styles.plus} onClick={handlePlusClick}>＋</button>
+            {showTaskMenu && (
+              <div className={styles.actionMenu}>
+                <button className={styles.actionItem} onClick={handleAssignTask}>
+                  과제 주기
+                </button>
+              </div>
+            )}
+          </>
+        )}
+
         <input
           className={styles.input}
           placeholder="메시지 입력"

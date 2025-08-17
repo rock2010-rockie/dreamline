@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { auth, db } from '@/lib/firebase'
 import { collection, query, where, getDocs } from 'firebase/firestore'
 import styles from './studentMypage.module.css'
@@ -14,7 +15,7 @@ interface StudentInfo {
 }
 
 const removeNumberPrefix = (text: string) => {
-  return text.replace(/^\d+\.\s*/, '')
+  return text?.replace(/^\d+\.\s*/, '') ?? ''
 }
 
 export default function StudentMypagePage() {
@@ -49,11 +50,16 @@ export default function StudentMypagePage() {
     <div className={styles.container}>
       <div className={styles.card}>
         <div className={styles.profileIcon}>👤</div>
-        <div className={styles.name}>{student.name}</div>
+        <div className={styles.name}>{student.name || '이름 미설정'}</div>
         <div className={styles.info}>
-          직업 / 전문분야 - {removeNumberPrefix(student.major)} / {removeNumberPrefix(student.middle)} / {removeNumberPrefix(student.minor)}
+          관심 분야 - {removeNumberPrefix(student.major) || '미설정'} / {removeNumberPrefix(student.middle) || '미설정'} / {removeNumberPrefix(student.minor) || '미설정'}
         </div>
-        <div className={styles.age}>나이 - {student.age}</div>
+        <div className={styles.age}>나이 - {student.age ? student.age : '미설정'}</div>
+
+        {/* 수정하기 버튼 */}
+        <Link href="/student/mypage/edit" className={styles.editButton}>
+          수정하기
+        </Link>
       </div>
     </div>
   )

@@ -3,24 +3,36 @@
   flex-direction: column;
   align-items: center;
   background-color: white;
-  min-height: 100vh; /* 화면보다 작을 경우 확장 */
-  overflow-y: auto;  /* 스크롤 필요시만 */
+  min-height: 100vh;
+  overflow-y: auto;
   padding: 0 20px;
 }
 
 /* 상단 퍼플바 */
-.header {
-  width: 100vw; /* 화면 전체 너비로 확실히 채움 */
-  background-color: #7B61FF;
-  color: white;
-  text-align: center;
-  padding: 16px 0;
-  font-size: 18px;
-  font-weight: bold;
+/* 모듈 css에 추가 */
+.header{
   position: sticky;
   top: 0;
   z-index: 10;
+
+  /* 풀블리드 핵심 */
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+
+  background-color: #7B61FF;
+  color: #fff;
+  text-align: center;
+  padding: 16px 0;
+  font-size: 18px;
+  font-weight: 700;
 }
+
+/* 가로 스크롤 방지 (전역 or 페이지 최상단 컨테이너) */
+:global(html), :global(body){
+  overflow-x: hidden;
+}
+
 
 .sectionTitle {
   margin-top: 24px;
@@ -38,17 +50,22 @@
   max-width: 360px;
 }
 
+/* 이름/나이 입력 공통 */
 .inputHalf {
-  flex: 1;
-  padding: 10px;
+  flex: 1 1 0;
+  min-width: 0;              /* flex 아이템이 균등하게 줄어들 수 있게 */
+  box-sizing: border-box;    /* 패딩/보더를 폭에 포함 → 튀어나옴 방지 */
+  padding: 12px;             /* 아래 .input 과 동일하게 맞춤 */
   border: 1px solid #ccc;
   border-radius: 8px;
   font-size: 14px;
 }
 
+/* 한 줄 전체 입력 */
 .input {
   width: 100%;
   max-width: 360px;
+  box-sizing: border-box;    /* 동일 처리 */
   padding: 12px;
   margin-top: 10px;
   border: 1px solid #ccc;

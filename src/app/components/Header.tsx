@@ -18,7 +18,7 @@ export default function Header() {
   const pathname = usePathname()
 
   // 특정 경로에서는 Header 숨기기
-  const hiddenRoutes = ['/', '/login', '/signup', '/splash']
+  const hiddenRoutes = ['/', '/login', '/signup', '/splash', "/board/search", '/board/search/result']
   const shouldHide = hiddenRoutes.includes(pathname) || pathname.startsWith('/chat')
 
   useEffect(() => {

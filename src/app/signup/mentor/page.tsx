@@ -45,9 +45,14 @@ export default function MentorSignupPage() {
         career,
         role: 'mentor',
         createdAt: new Date(),
+
+        // ✅ 신뢰도 기본값 (50점, 보통) — 시스템 시드 1표
+        trustScore: 50,
+        trustLevel: '보통',
+        ratingSum: 50,
+        ratingCount: 1,
       });
 
-      
       router.push('/login'); // ✅ 로그인 화면으로 이동
     } catch (error: any) {
       alert('회원가입 실패: ' + error.message);
@@ -91,7 +96,7 @@ export default function MentorSignupPage() {
         onChange={(e) => setPassword(e.target.value)}
       />
 
-      <div className={styles.sectionTitle}>직업/전문분야</div>
+      <div className={styles.sectionTitle}>직업/전문분야(필수)</div>
 
       <select
         className={styles.input}

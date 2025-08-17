@@ -1,0 +1,130 @@
+.container {
+    padding: 12px 16px;
+}
+
+.back {
+    background: none;
+    border: none;
+    font-size: 20px;
+    margin: 4px 0 8px;
+    cursor: pointer;
+}
+
+.searchBar {
+    display: flex;
+    align-items: center;
+    border-radius: 10px;
+    background: #f1f1f1;
+    padding: 8px 12px;
+}
+
+.input {
+    width: 100%;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 14px;
+}
+
+.sectionTitle {
+    margin: 16px 0 8px;
+    font-size: 13px;
+    color: #333;
+}
+
+.recentList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.recentItem {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.recentText {
+    background: none;
+    border: none;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.removeBtn {
+    background: none;
+    border: none;
+    font-size: 14px;
+    cursor: pointer;
+    color: #666;
+}
+
+.empty {
+    color: #888;
+    font-size: 13px;
+    margin-top: 8px;
+}
+
+.filterRow {
+    margin: 12px 0;
+    display: inline-flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.filterLabel {
+    font-size: 12px;
+    color: #444;
+}
+
+.select {
+    border: 1px solid #ccc;
+    border-radius: 12px;
+    padding: 6px 10px;
+    font-size: 13px;
+}
+
+.resultList {
+    list-style: none;
+    padding: 0;
+    margin: 8px 0 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.card {
+    border: 1px solid #cfcfcf;
+    border-radius: 10px;
+    padding: 12px;
+}
+
+.cardMeta {
+    font-size: 12px;
+    color: #777;
+    margin-bottom: 6px;
+}
+
+.cardTitle {
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.emptyResult {
+    margin-top: 28px;
+    text-align: center;
+    color: #777;
+}
+
+.card {
+    padding: 0;
+}
+
+.cardLink {
+    display: block;
+    padding: 12px;
+    text-decoration: none;
+    color: inherit;
+}

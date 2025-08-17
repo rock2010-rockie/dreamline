@@ -1,0 +1,121 @@
+/* ===== Detail page (task.module.css) ===== */
+
+/* page wrapper */
+.container {
+  min-height: 100vh;
+  background: #ffffff;
+  color: #111827; /* zinc-900 */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* top app bar */
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb; /* gray-200 */
+}
+
+.back {
+  background: none;
+  border: none;
+  font-size: 18px;
+  line-height: 1;
+  color: #111827;
+  cursor: pointer;
+  padding: 6px 8px;
+}
+
+.title {
+  font-weight: 700;
+  font-size: 16px;
+}
+
+/* content area */
+.form {
+  padding: 20px 16px 28px;
+}
+
+/* “과제 제목” 라벨/입력 대신 — 제목처럼 보이게 */
+.label {
+  display: none; /* 상세 화면에서는 라벨 숨김 (스샷처럼) */
+}
+
+.input {
+  /* 제목 */
+  margin: 0 0 14px 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-size: 18px;
+  font-weight: 800;  /* 스샷의 굵은 제목 */
+  line-height: 1.35;
+  color: #111827;
+}
+
+/* 본문 텍스트(스샷처럼 살짝 굵고 가독성 높게) */
+.textarea {
+  margin: 0 0 18px 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 700;  /* 스샷과 같은 굵기 느낌 */
+  line-height: 1.7;
+  color: #111827;
+  white-space: pre-wrap;
+}
+
+/* 구분선 여백 */
+.divider {
+  height: 8px;
+}
+
+/* ===== Steps (버튼처럼 보이는 줄) ===== */
+.stepRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 12px 14px;
+  background: #ffffff;
+  border: 1px solid #d1d5db;       /* gray-300 */
+  border-radius: 10px;              /* 스샷의 둥근 모서리 */
+  box-shadow: 0 1px 0 rgba(0,0,0,0.03);
+}
+
+.stepIndex {
+  font-size: 13px;
+  font-weight: 700;
+  color: #111827;
+  min-width: 18px;
+}
+
+.stepInput {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font-size: 13px;
+  color: #111827;
+}
+
+/* (선택) 작은 보조 텍스트나 안내 문구가 필요할 때 */
+.hint {
+  margin-top: 10px;
+  font-size: 12px;
+  color: #6b7280; /* gray-500 */
+}
+
+/* 모바일 터치 피드백 살짝 */
+.stepRow:active,
+.back:active {
+  opacity: 0.7;
+}

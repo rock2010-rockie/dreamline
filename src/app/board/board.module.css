@@ -110,3 +110,15 @@
   background-color: #f5f5f5;
 }
 
+/* === 빈 상태 전용 클래스 (추가) === */
+.empty {
+  padding: 24px 0;
+  text-align: center;
+  color: #888;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.emptyLink {
+  text-decoration: underline;
+}

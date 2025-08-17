@@ -39,3 +39,15 @@
   padding: 40px;
   text-align: center;
 }
+
+.editButton {
+  display: inline-block;
+  margin-top: 14px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #7B61FF; /* 프라임 컬러 */
+  color: #fff;
+  font-weight: 700;
+  text-align: center;
+}
+.editButton:hover { opacity: .95; }

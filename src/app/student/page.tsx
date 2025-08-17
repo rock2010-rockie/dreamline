@@ -1,114 +1,112 @@
-'use client';
+// src/app/student/page.tsx
+'use client'
 
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
-import styles from './student.module.css';
-import { categoryData } from '@/data/categoryData';
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { auth, db } from '@/lib/firebase'
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  where,
+  limit as fsLimit,
+} from 'firebase/firestore'
+import styles from './student.module.css' // 기존 css에 몇 개 클래스만 추가해서 씀
 
-export default function StudentHome() {
-  const router = useRouter();
+interface Mentor {
+  id: string
+  name: string
+  major?: string
+  bio?: string // 경력/특이사항
+}
 
-  const [major, setMajor] = useState('');
-  const [middle, setMiddle] = useState('');
-  const [minor, setMinor] = useState('');
-  const [trust, setTrust] = useState('');
+export default function StudentHomePage() {
+  const router = useRouter()
+  const [loading, setLoading] = useState(true)
+  const [mentors, setMentors] = useState<Mentor[]>([])
 
-  const majorList = Object.keys(categoryData);
-  const middleList = major ? Object.keys(categoryData[major]) : [];
-  const minorList = major && middle ? categoryData[major][middle] : [];
 
-  const handleSearch = () => {
-    if (!major) {
-      alert('대분류는 반드시 선택해야 합니다.');
-      return;
+  useEffect(() => {
+    const run = async () => {
+      try {
+        const user = auth.currentUser
+        if (!user) {
+          router.push('/login')
+          return
+        }
+
+        // 내 프로필에서 대분류(major) 읽기
+        const meRef = doc(db, 'users', user.uid)
+        const meSnap = await getDoc(meRef)
+        const myMajor = meSnap.exists() ? (meSnap.data().major as string | undefined) : undefined
+
+
+        // 해당 대분류 멘토 추천 (멘토가 mentors 컬렉션이면 그 이름으로 변경)
+        const base = collection(db, 'users')
+        const q = myMajor
+          ? query(base, where('role', '==', 'mentor'), where('major', '==', myMajor), fsLimit(20))
+          : query(base, where('role', '==', 'mentor'), fsLimit(20)) // major 없을 땐 상위 N
+
+        const snap = await getDocs(q)
+        const rows: Mentor[] = snap.docs.map(d => {
+          const data = d.data() as any
+          return {
+            id: d.id,
+            name: data.name || '이름 없음',
+            major: data.major,
+            bio: data.career || data.special || data.bio || '',
+          }
+        })
+        setMentors(rows)
+      } catch (e) {
+        console.error(e)
+      } finally {
+        setLoading(false)
+      }
     }
+    run()
+  }, [router])
 
-    const query = new URLSearchParams();
-    query.append('major', major);
-    if (middle) query.append('middle', middle);
-    if (minor) query.append('minor', minor);
-    if (trust) query.append('trust', trust);
+  const goFind = () => router.push('/student/search') // ← 기존 검색 화면으로 이동
+  const goDetail = (id: string) => router.push(`/mentor/detail/${id}`) // 기존 상세/요청 경로
 
-    router.push(`/student/result?${query.toString()}`);
-  };
 
   return (
-    <div className={styles.container}>
-      <div className={styles.title}>멘토 매칭</div>
+    <div className={styles.pageWrap}>
+      <div className={styles.headerRow}>
+        <div className={styles.title}>추천멘토</div>
+        <button className={styles.findBtn} onClick={goFind}>멘토 찾으러 가기</button>
+      </div>
 
-      <div className={styles.section}>
-        <div className={styles.label}>기본 설정</div>
-        <div className={styles.dropdownRow}>
-          {/* 대분류 */}
-          <select
-            className={styles.selectBox}
-            value={major}
-            onChange={(e) => {
-              setMajor(e.target.value);
-              setMiddle('');
-              setMinor('');
-            }}
-          >
-            <option value="">대분류</option>
-            {majorList.map((m) => (
-              <option key={m} value={m}>
-                {m}
-              </option>
-            ))}
-          </select>
-
-          {/* 중분류 */}
-          <select
-            className={styles.selectBox}
-            value={middle}
-            onChange={(e) => {
-              setMiddle(e.target.value);
-              setMinor('');
-            }}
-            disabled={!major}
-          >
-            <option value="">중분류</option>
-            {middleList.map((m) => (
-              <option key={m} value={m}>
-                {m}
-              </option>
-            ))}
-          </select>
-
-          {/* 소분류 */}
-          <select
-            className={styles.selectBox}
-            value={minor}
-            onChange={(e) => setMinor(e.target.value)}
-            disabled={!middle}
-          >
-            <option value="">소분류</option>
-            {minorList.map((m) => (
-              <option key={m} value={m}>
-                {m}
-              </option>
-            ))}
-          </select>
+      {loading ? (
+        <div className={styles.skeletonList}>
+          <div className={styles.cardSkeleton} />
+          <div className={styles.cardSkeleton} />
+          <div className={styles.cardSkeleton} />
         </div>
-      </div>
-
-      <div className={styles.section}>
-        <div className={styles.label}>신뢰도 설정</div>
-        <select
-          className={styles.selectBox}
-          value={trust}
-          onChange={(e) => setTrust(e.target.value)}
-        >
-          <option value="">신뢰도 (선택)</option>
-          <option value="높음">높음</option>
-          <option value="중간">중간</option>
-          <option value="낮음">낮음</option>
-        </select>
-      </div>
-
-      <button className={styles.searchButton} onClick={handleSearch}>
-        멘토 검색하기
-      </button>
+      ) : mentors.length === 0 ? (
+        <div className={styles.emptyWrap}>
+          <p className={styles.emptyText}>아직 멘토가 없어요. 다른 멘토를 찾아보세요!</p>
+        </div>
+      ) : (
+        <ul className={styles.cardList}>
+          {mentors.map(m => (
+            <li
+              key={m.id}
+              className={styles.card}
+              onClick={() => router.push(`/student/mentor/${m.id}`)}
+            >
+              <div className={styles.avatar} aria-hidden>👤</div>
+              <div className={styles.meta}>
+                <div className={styles.name}>{m.name}</div>
+                <div className={styles.desc}>{m.bio || '경력/ 특이사항'}</div>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
-  );
+  )
 }
