@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import {
   collection,
   doc,
@@ -13,24 +13,92 @@ import {
   addDoc,
   query,
   orderBy,
+  where,
+  getDocs,
+  limit as fsLimit,
+  serverTimestamp,
 } from 'firebase/firestore'
 import { auth, db } from '@/lib/firebase'
 import styles from './postDetail.module.css'
+
+type Role = 'mentor' | 'student' | string
 
 interface Comment {
   id: string
   text: string
   authorName: string
-  authorRole: string
+  authorRole: Role
+  authorId?: string
 }
 
 export default function PostDetailPage() {
   const { id } = useParams()
+  const router = useRouter()
+
   const [post, setPost] = useState<any>(null)
   const [liked, setLiked] = useState(false)
   const [likesCount, setLikesCount] = useState(0)
   const [comment, setComment] = useState('')
   const [comments, setComments] = useState<Comment[]>([])
+
+  // 역할 문자열 정규화 (한글/영문 모두 허용)
+  const normalizeRole = (raw?: any): 'mentor' | 'student' | null => {
+    if (!raw) return null
+    const s = String(raw).trim().toLowerCase()
+    if (s === 'mentor' || s === '멘토') return 'mentor'
+    if (s === 'student' || s === '학생') return 'student'
+    return null
+  }
+
+  // 이름+역할로 users에서 uid 찾기 (authorId 누락 대비)
+  const findUserIdByNameRole = async (name?: string, rawRole?: Role) => {
+    const role = normalizeRole(rawRole)
+    if (!name || !role) return null
+    const q = query(
+      collection(db, 'users'),
+      where('name', '==', name),
+      where('role', '==', role),
+      fsLimit(1)
+    )
+    const snap = await getDocs(q)
+    if (snap.empty) return null
+    return snap.docs[0].id
+  }
+
+  // 최종 이동
+  const goToRequestPage = (uid: string, role: 'mentor' | 'student') => {
+    const path =
+      role === 'mentor'
+        ? `/student/mentor/${uid}` // 학생 -> 멘토
+        : `/mentor/${uid}`         // 멘토 -> 학생
+    console.log('[goTo]', { uid, role, path })
+    router.push(path)
+    // 혹시 라우터가 막힌 환경 대비
+    setTimeout(() => {
+      if (location.pathname !== path) window.location.href = path
+    }, 120)
+  }
+
+  // 아이콘 클릭 (id 없으면 users에서 역추적)
+  const handleUserClick = async (maybeId?: string, rawRole?: Role, nameHint?: string) => {
+    try {
+      let role = normalizeRole(rawRole)
+      if (!role && maybeId) {
+        const u = await getDoc(doc(db, 'users', maybeId))
+        role = normalizeRole(u.data()?.role)
+      }
+      let uid = maybeId || null
+      if (!uid) uid = await findUserIdByNameRole(nameHint, role || rawRole)
+      if (!uid || !role) {
+        alert('이동할 사용자 정보를 찾지 못했어요.')
+        return
+      }
+      goToRequestPage(uid, role)
+    } catch (e) {
+      console.error(e)
+      alert('페이지 이동 중 오류가 발생했어요.')
+    }
+  }
 
   useEffect(() => {
     const fetchPost = async () => {
@@ -39,63 +107,62 @@ export default function PostDetailPage() {
       const data = snapshot.data()
       if (!data) return
       setPost(data)
-      setLikesCount(data.likes?.length || 0) // ← [] 대신 0으로 안전하게
+      setLikesCount(data.likes?.length || 0)
 
       const user = auth.currentUser
-      if (user && data.likes?.includes(user.uid)) {
-        setLiked(true)
-      }
+      if (user && data.likes?.includes(user.uid)) setLiked(true)
     }
 
-    const unsubscribeComments = onSnapshot(
-      query(
-        collection(db, 'posts', id as string, 'comments'),
-        orderBy('createdAt', 'asc')
-      ),
-      (snapshot) => {
-        const newComments = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        })) as Comment[]
-        setComments(newComments)
+    const unsub = onSnapshot(
+      query(collection(db, 'posts', id as string, 'comments'), orderBy('createdAt', 'asc')),
+      (snap) => {
+        const list = snap.docs.map((d) => {
+          const c = d.data() as any
+          return {
+            id: d.id,
+            text: c.text,
+            authorName: c.authorName,
+            authorRole: c.authorRole,
+            authorId: c.authorId,
+          } as Comment
+        })
+        setComments(list)
       }
     )
 
     fetchPost()
-    return () => unsubscribeComments()
+    return () => unsub()
   }, [id])
 
   const handleLike = async () => {
     const user = auth.currentUser
     if (!user || !post) return
-
     const postRef = doc(db, 'posts', id as string)
 
     if (liked) {
       await updateDoc(postRef, { likes: arrayRemove(user.uid) })
       setLiked(false)
-      setLikesCount((prev) => prev - 1)
+      setLikesCount((p) => p - 1)
     } else {
       await updateDoc(postRef, { likes: arrayUnion(user.uid) })
       setLiked(true)
-      setLikesCount((prev) => prev + 1)
+      setLikesCount((p) => p + 1)
     }
   }
 
   const handleCommentSubmit = async () => {
     const user = auth.currentUser
     if (!user || !comment.trim()) return
-
     const userDoc = await getDoc(doc(db, 'users', user.uid))
     const userData = userDoc.data()
 
     await addDoc(collection(db, 'posts', id as string, 'comments'), {
-      text: comment,
+      text: comment.trim(),
       authorName: userData?.name || '익명',
       authorRole: userData?.role || 'student',
-      createdAt: new Date(),
+      authorId: user.uid,              // ← 이후 클릭 이동에 필수
+      createdAt: serverTimestamp(),
     })
-
     setComment('')
   }
 
@@ -109,7 +176,14 @@ export default function PostDetailPage() {
 
       {/* 글쓴이 */}
       <div className={styles.userInfo}>
-        <img src="/user.svg" alt="유저 아이콘" className={styles.userIcon} />
+        <img
+          src="/user.svg"
+          alt="유저 아이콘"
+          className={styles.userIcon}
+          onClick={() => handleUserClick(post.authorId, post.authorRole, post.authorName)}
+          style={{ cursor: 'pointer' }}
+          title="요청/상세로 이동"
+        />
         <div className={styles.nameBox}>
           <div className={styles.name}>
             {post.authorName}
@@ -132,9 +206,6 @@ export default function PostDetailPage() {
       {/* 본문 */}
       <p className={styles.content}>{post.content}</p>
 
-
-      
-
       {/* 좋아요 */}
       <div className={styles.likeBox} onClick={handleLike}>
         <img
@@ -145,13 +216,20 @@ export default function PostDetailPage() {
         <span className={styles.likeCount}>{likesCount}</span>
       </div>
 
-      {/* ✅ 하트와 댓글 사이 구분선 추가 */}
+      {/* 구분선 */}
       <hr className={styles.sectionDivider} />
 
       {/* 댓글 목록 */}
       {comments.map((c) => (
         <div key={c.id} className={styles.comment}>
-          <img src="/user.svg" className={styles.commentIcon} alt="유저" />
+          <img
+            src="/user.svg"
+            className={styles.commentIcon}
+            alt="유저"
+            onClick={() => handleUserClick(c.authorId, c.authorRole, c.authorName)}
+            style={{ cursor: 'pointer' }}
+            title="요청/상세로 이동"
+          />
           <div>
             <div className={styles.commentAuthor}>
               <strong>{c.authorName}</strong> · {c.authorRole}

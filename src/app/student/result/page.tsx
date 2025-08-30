@@ -10,11 +10,15 @@ import styles from './result.module.css'
 interface Mentor {
   id: string
   name: string
-  field: string
-  major: string
-  middle: string
-  minor: string
-  trust: string
+  field?: string
+  major?: string
+  middle?: string
+  minor?: string
+  trust?: string
+  ratingAvg?: number
+  ratingSum?: number
+  ratingCount?: number
+  role?: string
 }
 
 export default function MentorResultPage() {
@@ -23,63 +27,60 @@ export default function MentorResultPage() {
   const major = searchParams.get('major') || ''
   const middle = searchParams.get('middle') || ''
   const minor = searchParams.get('minor') || ''
-  const trust = searchParams.get('trust') || ''
+  const trust = (searchParams.get('trustLevel') || searchParams.get('trust') || '').trim() // '낮음' | '중간' | '높음' | ''
 
   const [mentors, setMentors] = useState<Mentor[]>([])
   const [noResult, setNoResult] = useState(false)
 
   const fetchMentors = async () => {
     try {
-      const conditions = [
-        where('role', '==', 'mentor'),
-        where('major', '==', major),
-      ]
-      if (middle) conditions.push(where('middle', '==', middle))
-      if (minor) conditions.push(where('minor', '==', minor))
-      if (trust) conditions.push(where('trust', '==', trust))
+      // 1) 인덱스 없이 안전한 최소 쿼리: role == mentor
+      const qLite = query(collection(db, 'users'), where('role', '==', 'mentor'))
+      const snap = await getDocs(qLite)
+      const all: Mentor[] = snap.docs.map(d => ({ id: d.id, ...(d.data() as any) }))
 
-      const q = query(collection(db, 'users'), ...conditions)
-      const snapshot = await getDocs(q)
+      // 2) 클라이언트 필터 (major/middle/minor/ratingAvg)
+      let min = 0, max = 5
+      if (trust === '낮음') { min = 0; max = 2 }
+      else if (trust === '중간') { min = 2; max = 4 }
+      else if (trust === '높음') { min = 4; max = 5 }
 
-      if (snapshot.empty) {
-        setNoResult(true)
-        setMentors([])
-      } else {
-        const result = snapshot.docs.map((doc) => ({
-          ...(doc.data() as Mentor),
-          id: doc.id,
-        }))
-        setMentors(result)
-        setNoResult(false)
-      }
+      const filtered = all.filter(m => {
+        if (m.major !== major) return false
+        if (middle && m.middle !== middle) return false
+        if (minor && m.minor !== minor) return false
+
+        if (trust) {
+          // ratingAvg가 없으면 ratingSum/ratingCount로 보정
+          const avg =
+            typeof m.ratingAvg === 'number'
+              ? m.ratingAvg
+              : (m.ratingCount ? (Number(m.ratingSum || 0) / Number(m.ratingCount || 0)) : 0)
+          return avg >= min && avg <= max
+        }
+        return true
+      })
+
+      setMentors(filtered)
+      setNoResult(filtered.length === 0)
     } catch (err) {
       console.error('검색 실패:', err)
       setNoResult(true)
+      setMentors([])
     }
   }
 
   useEffect(() => {
     fetchMentors()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   return (
     <div className={styles.container}>
       <div className={styles.header}>
         <button className={styles.backButton} onClick={() => router.back()}>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <path
-              d="M15 18l-6-6 6-6"
-              stroke="#000"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+            <path d="M15 18l-6-6 6-6" stroke="#000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </button>
         <span className={styles.title}>멘토 둘러보기</span>
@@ -90,16 +91,12 @@ export default function MentorResultPage() {
       ) : (
         <div className={styles.cardList}>
           {mentors.map((mentor) => (
-            <Link
-              href={`/student/mentor/${mentor.id}`}
-              key={mentor.id}
-              className={styles.card}
-            >
+            <Link href={`/student/mentor/${mentor.id}`} key={mentor.id} className={styles.card}>
               <div className={styles.icon}>👤</div>
               <div className={styles.info}>
                 <div className={styles.name}>{mentor.name}</div>
                 <div className={styles.desc}>
-                  {mentor.field || `${mentor.middle} / ${mentor.minor}`}
+                  {mentor.field || `${mentor.middle ?? ''} / ${mentor.minor ?? ''}`}
                 </div>
               </div>
             </Link>

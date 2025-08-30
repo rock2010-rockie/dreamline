@@ -69,3 +69,12 @@
   font-size: 18px;
   font-weight: bold;
 }
+
+.card {
+  text-decoration: none;
+  color: inherit;
+}
+
+.card * {
+  text-decoration: none;
+}

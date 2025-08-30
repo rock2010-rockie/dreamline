@@ -1,0 +1,85 @@
+.container {
+    background: #fff;
+    min-height: 100vh;
+}
+
+.header {
+    position: sticky;
+    top: 0;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid #eee;
+}
+
+.back {
+    background: none;
+    border: none;
+    font-size: 20px;
+    margin: 0 8px 0 12px;
+}
+
+.title {
+    font-weight: 800;
+    color: #7B61FF;
+}
+
+.rateWrap {
+    padding: 24px 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+}
+
+.name {
+    font-weight: 700;
+}
+
+.stars {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.starOn,
+.starOff {
+    background: none;
+    border: none;
+    font-size: 28px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.starOn {
+    color: #7B61FF;
+}
+
+.starOff {
+    color: #d3d3d3;
+}
+
+.score {
+    font-weight: 800;
+    margin-left: 8px;
+}
+
+.caption {
+    color: #999;
+    font-size: 12px;
+}
+
+.primary {
+    margin-top: 6px;
+    padding: 12px 16px;
+    border: none;
+    border-radius: 10px;
+    background: #7B61FF;
+    color: #fff;
+    font-weight: 700;
+    width: 200px;
+}
+
+.primary:disabled {
+    opacity: 0.6;
+}

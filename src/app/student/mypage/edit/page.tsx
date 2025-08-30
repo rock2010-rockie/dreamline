@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { auth, db } from '@/lib/firebase'
-import { doc, getDoc, setDoc } from 'firebase/firestore'
+import { doc, getDoc, setDoc, deleteField } from 'firebase/firestore' // ← deleteField 추가
 import styles from './editPage.module.css'
 import { categoryData } from '@/data/categoryData'
 
@@ -87,16 +87,52 @@ export default function StudentMypageEditPage() {
 
     setSaving(true)
     try {
-      const payload: Record<string, any> = {
+      // 기본(이름/나이/역할) 페이로드 — 기존 로직 유지
+      const basePayload: Record<string, any> = {
         name: name.trim() || undefined,
         age: age === '' ? undefined : Number(age),
-        major: major || undefined,
-        middle: middle || undefined,
-        minor: minor || undefined,
-        role: 'student', // 학생 화면에서는 role 고정
+        role: 'student',
       }
 
-      await setDoc(doc(db, 'users', user.uid), payload, { merge: true })
+      // 🔥 분류 저장 규칙
+      // - 대분류 미선택(''): major/middle/minor 모두 제거
+      // - 대분류만 선택: major 저장, middle/minor 제거
+      // - 대+중 선택: major/middle 저장, minor 제거
+      // - 대+중+소 선택: 모두 저장
+      const categoryUpdates: Record<string, any> = {}
+
+      if (!major) {
+        // 아무 분류도 원치 않음 → 모두 삭제
+        categoryUpdates.major = deleteField()
+        categoryUpdates.middle = deleteField()
+        categoryUpdates.minor = deleteField()
+      } else {
+        // 대분류는 선택됨
+        categoryUpdates.major = major
+
+        if (!middle) {
+          // 중분류 미선택 → 중/소 삭제
+          categoryUpdates.middle = deleteField()
+          categoryUpdates.minor = deleteField()
+        } else {
+          // 중분류 선택됨
+          categoryUpdates.middle = middle
+
+          if (!minor) {
+            // 소분류 미선택 → 소만 삭제
+            categoryUpdates.minor = deleteField()
+          } else {
+            // 소분류까지 선택됨
+            categoryUpdates.minor = minor
+          }
+        }
+      }
+
+      await setDoc(
+        doc(db, 'users', user.uid),
+        { ...basePayload, ...categoryUpdates },
+        { merge: true }
+      )
 
       alert('저장했어요!')
       router.push('/student/mypage')

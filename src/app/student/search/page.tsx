@@ -27,7 +27,12 @@ export default function StudentHome() {
     query.append('major', major);
     if (middle) query.append('middle', middle);
     if (minor) query.append('minor', minor);
-    if (trust) query.append('trust', trust);
+
+    // ✅ 신뢰도는 선택적: Firestore의 trustLevel(낮음/중간/높음) 그대로 사용
+    if (trust) {
+      query.append('trust', trust);          // 화면 표시/유지용
+      query.append('trustLevel', trust);     // 결과 쿼리 where('trustLevel','==', trust)
+    }
 
     router.push(`/student/result?${query.toString()}`);
   };
@@ -38,7 +43,7 @@ export default function StudentHome() {
       <div className={styles.header}>
         <button
           className={styles.backBtn}
-          onClick={() => router.push('/student')} // 👉 무조건 학생 홈으로
+          onClick={() => router.push('/student')}
         >
           <img src="/back.svg" alt="뒤로가기" className={styles.backIcon} />
         </button>

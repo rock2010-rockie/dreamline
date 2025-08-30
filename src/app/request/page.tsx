@@ -58,7 +58,7 @@ export default function RequestPage() {
             },
             user: {
               name: userData.name,
-              note: userData.note || '경력/특이사항'
+            //  note: userData.note || '경력/특이사항'
             }
           })
         }

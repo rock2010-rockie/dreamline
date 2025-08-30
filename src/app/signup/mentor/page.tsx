@@ -37,7 +37,7 @@ export default function MentorSignupPage() {
       await setDoc(doc(db, 'users', user.uid), {
         uid: user.uid,
         name,
-        age : Number(age),
+        age: Number(age),
         email,
         major,
         middle,
@@ -47,10 +47,11 @@ export default function MentorSignupPage() {
         createdAt: new Date(),
 
         // ✅ 신뢰도 기본값 (50점, 보통) — 시스템 시드 1표
-        trustScore: 50,
-        trustLevel: '보통',
-        ratingSum: 50,
+        ratingSum: 3,        // 시스템 시드 1표 = 3점
         ratingCount: 1,
+        ratingAvg: 3.0,      // 캐시(검색/정렬용)
+        trustLevel: '중간',  // 기준: 낮음 0~2, 중간 2~4, 높음 4~5
+        trustScore: 3.0,     // ⚠️ 이제 0~5 스케일로 저장
       });
 
       router.push('/login'); // ✅ 로그인 화면으로 이동

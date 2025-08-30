@@ -145,15 +145,15 @@ export default function ChatRoomPage() {
         content: String(raw.content ?? ''),
         steps: Array.isArray(raw.steps) ? (raw.steps as string[]) : [],
         progress: progressNum,
-        isCompleted: Boolean(raw.isCompleted ?? progressNum >= 100),
+        isCompleted: Boolean(raw.isCompleted ?? false), // ★ 100%라고 자동 완료 X
         createdBy: String(raw.createdBy ?? ''),
         createdAt: raw.createdAt,
       }
 
-      if (data.isCompleted || data.progress >= 100) {
+      if (data.isCompleted) {           // ★ 완료된 경우에만 숨김
         setAssignment(null)
       } else {
-        setAssignment(data)
+        setAssignment(data)             // ★ 100%여도 버튼을 보여주기 위해 유지
       }
     }, () => setAssignment(null))
     return () => unsub()
@@ -189,8 +189,17 @@ export default function ChatRoomPage() {
     if (!isMentor || !chatId) return
     await updateDoc(doc(db, 'chats', chatId as string, 'assignment', 'current'), {
       progress: value,
-      isCompleted: value >= 100,
+      // isCompleted: value >= 100,  // ★ 제거: 자동 완료 금지
     })
+  }
+
+  // ★ 추가: 100%에서 눌러서 완료 처리
+  const finishAssignment = async () => {
+    if (!chatId) return
+    await updateDoc(doc(db, 'chats', chatId as string, 'assignment', 'current'), {
+      isCompleted: true,
+    })
+    setIsTaskExpanded(false)
   }
 
   const formatTime = (timestamp: any) => {
@@ -287,21 +296,34 @@ export default function ChatRoomPage() {
 
               <div
                 className={styles.taskPanelFooter}
-                onClick={(e) => e.stopPropagation()}   // ← 접기 버튼 눌러도 페이지 이동 안되게
+                onClick={(e) => e.stopPropagation()}   // ← 버튼 눌러도 페이지 이동 방지
               >
-                <button
-                  className={styles.collapse}
-                  type="button"
-                  onClick={() => setIsTaskExpanded(false)}
-                >
-                  ▲
-                </button>
+                {/* ★ 추가: 100% 도달 & 아직 완료 전이면 버튼 노출 */}
+                {assignment.progress === 100 && !assignment.isCompleted && (
+                  <button
+                    onClick={finishAssignment}
+                    // CSS 변경 없이도 예쁘게 보이도록 최소한의 인라인 스타일만 사용
+                    style={{
+                      marginTop: 12,
+                      width: '100%',
+                      padding: '12px 14px',
+                      borderRadius: 12,
+                      border: 'none',
+                      fontWeight: 700,
+                      fontSize: 14,
+                      cursor: 'pointer',
+                      background: '#7B61FF',
+                      color: '#fff',
+                    }}
+                  >
+                    과제 끝내기
+                  </button>
+                )}
               </div>
             </div>
           )}
         </div>
       )}
-
 
       <div className={styles.chatArea}>
         {messages.length === 0 ? (

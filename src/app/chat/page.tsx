@@ -8,6 +8,7 @@ import styles from './chatList.module.css'
 
 interface ChatItem {
   id: string           // chatId
+  otherUserId: string  // ✅ 상대방 uid 추가
   otherUserName: string
   otherUserRole: '멘토' | '학생'
 }
@@ -50,7 +51,8 @@ export default function ChatListPage() {
         const otherUser = otherUserSnap.docs[0]?.data()
 
         results.push({
-          id: docSnap.id, // ✅ chatId
+          id: docSnap.id, // chatId
+          otherUserId: otherId, // ✅ 저장
           otherUserName: otherUser?.name || '알 수 없음',
           otherUserRole: otherUser?.role || '학생',
         })
@@ -70,14 +72,28 @@ export default function ChatListPage() {
 
       <ul className={styles.list}>
         {chatList.map(chat => (
-          <li
-            key={chat.id}
-            className={styles.card}
-            onClick={() => router.push(`/chat/${chat.id}`)} // ✅ 이동 기능 추가
-            style={{ cursor: 'pointer' }} // UX 개선
-          >
-            <div className={styles.avatar}>👤</div>
-            <div>
+          <li key={chat.id} className={styles.card}>
+            {/* 👤 아이콘 클릭 시 프로필 페이지 이동 */}
+            <div
+              className={styles.avatar}
+              onClick={(e) => {
+                e.stopPropagation() // 부모 onClick 막기
+                if (userRole === '학생') {
+                  router.push(`mentor/${chat.otherUserId}`)
+                } else {
+                  router.push(`/student/mentor/${chat.otherUserId}`)
+                }
+              }}
+              style={{ cursor: 'pointer' }}
+            > 
+              👤
+            </div>
+
+            {/* 카드 전체 클릭 시 채팅방 이동 */}
+            <div
+              onClick={() => router.push(`/chat/${chat.id}`)}
+              style={{ cursor: 'pointer', flex: 1 }}
+            >
               <div className={styles.name}>{chat.otherUserName}</div>
               <div className={styles.sub}>새 채팅을 시작해 보세요!</div>
             </div>

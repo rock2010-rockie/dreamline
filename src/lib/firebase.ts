@@ -7,7 +7,7 @@ const firebaseConfig = {
 apiKey: "AIzaSyBGoWoeL2ECu-hbthcwwFHjFXoHEFDxJ88",
   authDomain: "dreamline-ebaca.firebaseapp.com",
   projectId: "dreamline-ebaca",
-  storageBucket: "dreamline-ebaca.firebasestorage.app",
+  storageBucket: "dreamline-ebaca.appspot.com",
   messagingSenderId: "902058246589",
   appId: "1:902058246589:web:99639af0d94fdd4df352d4",
   measurementId: "G-4J15D0VTWC"
