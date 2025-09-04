@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useParams } from 'next/navigation'
 import {
   doc,
   getDoc,
@@ -14,7 +14,7 @@ import {
   getDocs,
 } from 'firebase/firestore'
 import { db, auth } from '@/lib/firebase'
-import { onAuthStateChanged } from 'firebase/auth' // ✅ 추가
+import { onAuthStateChanged } from 'firebase/auth'
 import styles from './mentorDetail.module.css'
 
 interface MentorData {
@@ -24,49 +24,56 @@ interface MentorData {
   minor: string
   age: number
   career: string
-  // ✅ 신뢰도/평점 관련(옵션)
   ratingSum?: number
   ratingCount?: number
   ratingAvg?: number
   trustLevel?: '낮음' | '중간' | '높음'
-  trustScore?: number // 0~5 스케일
+  trustScore?: number
 }
 
-export default function MentorDetailPage({ params }: { params: { id: string } }) {
+export default function MentorDetailPage() {
   const router = useRouter()
+  const { id } = useParams<{ id: string }>()   // ✅ params 대신 useParams로 id만 사용
+
   const [mentor, setMentor] = useState<MentorData | null>(null)
-  const [hasChat, setHasChat] = useState<boolean>(false) // ✅ 이미 채팅 존재 여부
+  const [hasChat, setHasChat] = useState<boolean>(false)
 
   useEffect(() => {
-    const run = async () => {
-      // ✅ 멘토 정보 - 실시간 반영(onSnapshot)
-      const docRef = doc(db, 'users', params.id)
-      const unsub = onSnapshot(docRef, (snap) => {
+    if (!id) return
+
+    const ref = doc(db, 'users', id)
+
+    // ✅ 실시간 구독으로 mentor 세팅 + 에러 콜백 + cleanup
+    const unsub = onSnapshot(
+      ref,
+      (snap) => {
         if (snap.exists()) setMentor(snap.data() as MentorData)
-      })
-
-      // ✅ 나와 이 멘토 사이 채팅 존재 여부 확인(1회 체크)
-      const me = auth.currentUser
-      if (me) {
-        const myChats = await getDocs(
-          query(collection(db, 'chats'), where('participants', 'array-contains', me.uid))
-        )
-        let exists = false
-        myChats.forEach(s => {
-          const pts: string[] = (s.data() as any)?.participants || []
-          if (Array.isArray(pts) && pts.includes(params.id)) exists = true
-        })
-        setHasChat(exists)
+        else setMentor(null)
+      },
+      (err) => {
+        console.error('[mentor detail] onSnapshot error:', err)
       }
+    )
 
-      return () => unsub()
-    }
-    run()
-  }, [params.id])
+    // ✅ 이미 채팅이 있는지 확인
+    ;(async () => {
+      const me = auth.currentUser
+      if (!me) return
+      const qs = await getDocs(
+        query(collection(db, 'chats'), where('participants', 'array-contains', me.uid))
+      )
+      const exists = qs.docs.some(d => {
+        const pts = (d.data() as any)?.participants as string[] | undefined
+        return Array.isArray(pts) && pts.includes(id)
+      })
+      setHasChat(exists)
+    })()
+
+    return () => unsub()
+  }, [id])
 
   const cleanCategory = (text: string) => text.replace(/^\d+\./, '')
 
-  // ✅ auth 지연 대비: 사용자 확보
   const getUserNow = async () => {
     if (auth.currentUser) return auth.currentUser
     return await new Promise<any>((resolve) => {
@@ -77,7 +84,6 @@ export default function MentorDetailPage({ params }: { params: { id: string } })
     })
   }
 
-  // ✅ 별점 주기 페이지로 가기 전 7일 쿨다운 검사
   const handleOpenRatingPage = async () => {
     try {
       const me = await getUserNow()
@@ -86,7 +92,7 @@ export default function MentorDetailPage({ params }: { params: { id: string } })
         return
       }
 
-      const myRatingRef = doc(db, 'users', params.id, 'ratings', me.uid)
+      const myRatingRef = doc(db, 'users', id, 'ratings', me.uid)
       const mySnap = await getDoc(myRatingRef)
 
       if (mySnap.exists()) {
@@ -98,20 +104,18 @@ export default function MentorDetailPage({ params }: { params: { id: string } })
           if (now < nextAllowed) {
             const nextStr = nextAllowed.toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })
             alert(`별점은 1주일에 1번만 줄 수 있어요.\n다음 가능일: ${nextStr}`)
-            return // ⛔ 이동 차단 (여기서 종료)
+            return
           }
         }
       }
 
-      // ✅ 통과 시에만 이동
-      router.push(`/rating/${params.id}`)
+      router.push(`/rating/${id}`)
     } catch (err) {
       console.error(err)
       alert('상태 확인 중 오류가 발생했어요.')
     }
   }
 
-  // ✅ 요청 전송 (중복 방지)
   const handleRequestChat = async () => {
     const user = auth.currentUser
     if (!user) {
@@ -125,7 +129,7 @@ export default function MentorDetailPage({ params }: { params: { id: string } })
     try {
       await addDoc(collection(db, 'requests'), {
         from: user.uid,
-        to: params.id, // 멘토 uid
+        to: id,
         status: 'pending',
         createdAt: serverTimestamp(),
       })
@@ -138,7 +142,6 @@ export default function MentorDetailPage({ params }: { params: { id: string } })
 
   if (!mentor) return <div className={styles.container}>로딩 중...</div>
 
-  // ✅ 평균/등급 계산 (소수 1자리)
   const sum = mentor.ratingSum ?? 0
   const cnt = mentor.ratingCount ?? 0
   const avg = cnt > 0 ? sum / cnt : 0
@@ -148,7 +151,6 @@ export default function MentorDetailPage({ params }: { params: { id: string } })
 
   return (
     <div className={styles.container}>
-      {/* ✅ 상단 뒤로가기 */}
       <div className={styles.header}>
         <button className={styles.back} onClick={() => router.back()} aria-label="뒤로가기">
           &lt;
@@ -169,19 +171,17 @@ export default function MentorDetailPage({ params }: { params: { id: string } })
         </div>
       </div>
 
-      {/* ✅ 채팅이 이미 있으면 버튼 숨김 */}
       {!hasChat && (
         <button className={styles.chatButton} onClick={handleRequestChat}>
           채팅 요청 보내기
         </button>
       )}
 
-      {/* ✅ 신뢰도 표시 + 별점 주러가기 */}
       <div
         className={styles.trustRow}
-        onClick={(e) => e.stopPropagation()}              // ⛔ 부모 클릭 전파 차단
-        onMouseDown={(e) => e.stopPropagation()}         // ⛔ 일부 단말 우회 방지
-        onTouchStart={(e) => e.stopPropagation()}        // ⛔ 모바일 탭 전파 차단
+        onClick={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
+        onTouchStart={(e) => e.stopPropagation()}
         style={{ position: 'relative', zIndex: 5 }}
       >
         <span className={styles.trustText}>
@@ -190,7 +190,7 @@ export default function MentorDetailPage({ params }: { params: { id: string } })
         <button
           className={styles.ghostBtn}
           type="button"
-          onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleOpenRatingPage() }} // ✅ 먼저 검사, 불가 시 즉시 종료
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleOpenRatingPage() }}
           onMouseDown={(e) => e.stopPropagation()}
           onTouchStart={(e) => e.stopPropagation()}
           style={{ position: 'relative', zIndex: 6, pointerEvents: 'auto', cursor: 'pointer' }}

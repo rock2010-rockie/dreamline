@@ -29,9 +29,7 @@
 }
 
 /* 가로 스크롤 방지 (전역 or 페이지 최상단 컨테이너) */
-:global(html), :global(body){
-  overflow-x: hidden;
-}
+
 
 .sectionTitle{
   margin-top:24px;
