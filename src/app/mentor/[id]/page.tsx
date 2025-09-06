@@ -59,7 +59,7 @@ export default function StudentDetail() {
     <div className={styles.container}>
       {/* ✅ 뒤로가기 버튼 */}
       <button onClick={() => history.back()} className={styles.backBtn}>
-        <Image src="/back.svg" alt="뒤로가기" width={24} height={24} />
+        <Image src="/back.svg" alt="뒤로가기" />
       </button>
 
       <div className={styles.card}>
