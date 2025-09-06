@@ -11,6 +11,7 @@ import {
   onSnapshot,
   Unsubscribe,
 } from 'firebase/firestore'
+import Image from 'next/image'
 
 export default function Header() {
   const [hasNewRequest, setHasNewRequest] = useState(false)
@@ -60,7 +61,7 @@ export default function Header() {
     <header className={styles.header}>
       <span className={styles.title}>DREAMLINE</span>
       <div className={styles.bellWrapper} onClick={handleBellClick}>
-        <img src="/bell.svg" alt="알림" className={styles.bell} />
+        <Image src="/bell.svg" alt="알림" className={styles.bell} />
         {hasNewRequest && <span className={styles.redDot}></span>}
       </div>
     </header>

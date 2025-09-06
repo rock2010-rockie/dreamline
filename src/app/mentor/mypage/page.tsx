@@ -21,7 +21,9 @@ interface MentorInfo {
 const removeNumberPrefix = (text?: string) =>
   (text ?? '').replace(/^\d+\.\s*/, '')
 
-const toNum = (v: any) => (typeof v === 'number' ? v : Number(v))
+// ✅ any 제거: 안전한 숫자 변환
+const toNum = (v: number | string): number =>
+  typeof v === 'number' ? v : Number(v)
 
 export default function MentorMypagePage() {
   const [mentor, setMentor] = useState<MentorInfo | null>(null)
@@ -37,7 +39,7 @@ export default function MentorMypagePage() {
       }
       const ref = doc(db, 'users', user.uid)
       const snap = await getDoc(ref)
-      const data = (snap.data() || {}) as MentorInfo
+      const data = (snap.data() as MentorInfo | undefined) ?? {}
       setMentor({
         name: data.name ?? '',
         job: data.job ?? '',

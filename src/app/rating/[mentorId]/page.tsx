@@ -8,8 +8,9 @@ import {
   getDoc,
   runTransaction,
   serverTimestamp,
+  Timestamp,             // ✅ 추가
 } from 'firebase/firestore'
-import { onAuthStateChanged } from 'firebase/auth'
+import { onAuthStateChanged, type User } from 'firebase/auth' // ✅ 추가
 import styles from './rating.module.css'
 
 function levelFromAvg(avg: number) {
@@ -22,17 +23,32 @@ function formatKST(dt: Date) {
   return dt.toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })
 }
 
+// ✅ Firestore 문서 타입들
+type MentorDoc = {
+  name?: string
+  ratingSum?: number
+  ratingCount?: number
+  ratingAvg?: number
+  trustLevel?: '낮음' | '중간' | '높음'
+  trustScore?: number
+}
+
+type RatingDoc = {
+  lastValue?: number
+  lastRatedAt?: Timestamp
+}
+
 export default function MentorRatingPage() {
-  const { mentorId } = useParams() as { mentorId: string }
+  const { mentorId } = useParams<{ mentorId: string }>()  // ✅ 제네릭으로 보장
   const router = useRouter()
   const [mentorName, setMentorName] = useState<string>('')
   const [selected, setSelected] = useState<number>(0)
   const [submitting, setSubmitting] = useState(false)
 
   // ✅ auth 초기화 지연 대비: 로그인 사용자 확보
-  const getUserNow = async () => {
+  const getUserNow = async (): Promise<User | null> => {
     if (auth.currentUser) return auth.currentUser
-    return await new Promise<any>((resolve) => {
+    return await new Promise<User | null>((resolve) => {
       const unsub = onAuthStateChanged(auth, (u) => {
         unsub()
         resolve(u)
@@ -42,10 +58,10 @@ export default function MentorRatingPage() {
 
   useEffect(() => {
     const run = async () => {
-      // 멘토 이름 로드(그대로)
+      // 멘토 이름 로드
       const ref = doc(db, 'users', mentorId)
       const snap = await getDoc(ref)
-      if (snap.exists()) setMentorName((snap.data() as any)?.name ?? '')
+      if (snap.exists()) setMentorName((snap.data() as MentorDoc)?.name ?? '')
 
       // ✅ 진입 가드: 최근 평가 7일 이내면 알림 후 뒤로가기
       const me = await getUserNow()
@@ -53,7 +69,7 @@ export default function MentorRatingPage() {
       const myRatingRef = doc(db, 'users', mentorId, 'ratings', me.uid)
       const mySnap = await getDoc(myRatingRef)
       if (mySnap.exists()) {
-        const last = (mySnap.data() as any)?.lastRatedAt
+        const last = (mySnap.data() as RatingDoc)?.lastRatedAt
         if (last?.toDate) {
           const lastDt: Date = last.toDate()
           const nextAllowed = new Date(lastDt.getTime() + 7 * 24 * 60 * 60 * 1000)
@@ -66,7 +82,7 @@ export default function MentorRatingPage() {
       }
     }
     run()
-  }, [mentorId])
+  }, [mentorId, router]) // ✅ 경고 해결: router 의존성 추가
 
   const handleRate = async () => {
     if (!selected) return
@@ -83,7 +99,7 @@ export default function MentorRatingPage() {
       const myRatingRef = doc(db, 'users', mentorId, 'ratings', me.uid)
       const mySnap = await getDoc(myRatingRef)
       if (mySnap.exists()) {
-        const last = (mySnap.data() as any)?.lastRatedAt
+        const last = (mySnap.data() as RatingDoc)?.lastRatedAt
         if (last?.toDate) {
           const lastDt: Date = last.toDate()
           const nextAllowed = new Date(lastDt.getTime() + 7 * 24 * 60 * 60 * 1000)
@@ -100,21 +116,21 @@ export default function MentorRatingPage() {
         const snap = await tx.get(ref)
         if (!snap.exists()) throw new Error('멘토 문서가 없습니다.')
 
-        const data = snap.data() as any
+        const data = (snap.data() as MentorDoc) || {}
         const sum = Number(data.ratingSum ?? 0) + selected
         const count = Number(data.ratingCount ?? 0) + 1
         const avg = count > 0 ? sum / count : 0
 
         const trustLevel = levelFromAvg(avg)
         const ratingAvg = Math.round(avg * 10) / 10
-        const trustScore = Math.round((avg / 5) * 100) // ← 너의 기존 로직 그대로 둠
+        const trustScore = Math.round((avg / 5) * 100)
 
         tx.update(ref, {
           ratingSum: sum,
           ratingCount: count,
-          ratingAvg,       // 검색/필터용 캐시
-          trustLevel,      // 낮음/중간/높음
-          trustScore,      // (선택) 0~100 스케일
+          ratingAvg,
+          trustLevel,
+          trustScore,
         })
 
         // ✅ 내 최근 평가 시각 기록 (쿨다운 근거)
@@ -130,8 +146,9 @@ export default function MentorRatingPage() {
 
       alert('별점을 남겼습니다!')
       router.back()
-    } catch (e: any) {
-      alert('실패: ' + e.message)
+    } catch (e: unknown) {                 // ✅ any 제거
+      const msg = e instanceof Error ? e.message : String(e)
+      alert('실패: ' + msg)
     } finally {
       setSubmitting(false)
     }

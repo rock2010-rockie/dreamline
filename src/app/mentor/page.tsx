@@ -11,7 +11,7 @@ export default function StudentHome() {
   const [major, setMajor] = useState('');
   const [middle, setMiddle] = useState('');
   const [minor, setMinor] = useState('');
-  const [trust, setTrust] = useState('');
+  const [trust] = useState(''); // ✅ setTrust 제거
 
   const majorList = Object.keys(categoryData);
   const middleList = major ? Object.keys(categoryData[major]) : [];
@@ -92,7 +92,6 @@ export default function StudentHome() {
         </div>
       </div>
 
-      
       <button className={styles.searchButton} onClick={handleSearch}>
         학생 검색하기
       </button>

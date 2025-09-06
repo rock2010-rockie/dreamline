@@ -1,12 +1,21 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { db } from '@/lib/firebase'
-import { collection, getDocs, orderBy, query, limit as fsLimit } from 'firebase/firestore'
+import { collection, getDocs, orderBy, query, limit as fsLimit, Timestamp } from 'firebase/firestore'
 import styles from '../search.module.css'
 import { categoryData } from '@/data/categoryData'
+
+type PostDoc = {
+  title?: string
+  type?: '궁금해요' | '멘토소식' | string
+  major?: string
+  middle?: string
+  minor?: string
+  createdAt?: Timestamp
+}
 
 interface Post {
   id: string
@@ -15,7 +24,7 @@ interface Post {
   major?: string
   middle?: string
   minor?: string
-  createdAt?: any
+  createdAt?: Timestamp
 }
 
 function normalize(s: string) {
@@ -39,15 +48,27 @@ function stripNumberPrefix(s?: string) {
   return s.replace(/^\d+\.\s?/, '')
 }
 
-const getMajorList = () => {
-  if (Array.isArray(categoryData)) return (categoryData as any[]).map((c: any) => c.major)
-  return Object.keys(categoryData as Record<string, any>)
+type CategoryArrayItem = { major: string }
+type CategoryDict = Record<string, unknown>
+
+function isCategoryArray(x: unknown): x is CategoryArrayItem[] {
+  return Array.isArray(x) && x.every(i => typeof (i as CategoryArrayItem).major === 'string')
 }
 
-// ✅ 상세 경로 수정: /board/[id]
+function isCategoryDict(x: unknown): x is CategoryDict {
+  return !!x && typeof x === 'object' && !Array.isArray(x)
+}
+
+const getMajorList = () => {
+  if (isCategoryArray(categoryData)) return categoryData.map(c => c.major)
+  if (isCategoryDict(categoryData)) return Object.keys(categoryData)
+  return [] as string[]
+}
+
 const POST_DETAIL = (id: string) => `/board/${id}`
 
-export default function BoardSearchResultPage() {
+// ---------- 훅을 사용하는 실제 화면 ----------
+function BoardSearchResultInner() {
   const router = useRouter()
   const params = useSearchParams()
   const keyword = params.get('keyword') || ''
@@ -65,7 +86,18 @@ export default function BoardSearchResultPage() {
         fsLimit(200)
       )
       const snap = await getDocs(q)
-      const raw: Post[] = snap.docs.map(d => ({ id: d.id, ...(d.data() as any) }))
+      const raw: Post[] = snap.docs.map(d => {
+        const data = d.data() as PostDoc
+        return {
+          id: d.id,
+          title: data.title ?? '',
+          type: data.type,
+          major: data.major,
+          middle: data.middle,
+          minor: data.minor,
+          createdAt: data.createdAt,
+        }
+      })
 
       const hit = raw.filter(p => p.title && matchesKeyword(p.title, keyword))
       setAllHit(hit)
@@ -117,5 +149,14 @@ export default function BoardSearchResultPage() {
         </ul>
       )}
     </div>
+  )
+}
+
+// ---------- Suspense로 감싸는 래퍼(페이지 기본 내보내기) ----------
+export default function BoardSearchResultPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: 16 }}>검색 결과 불러오는 중…</div>}>
+      <BoardSearchResultInner />
+    </Suspense>
   )
 }

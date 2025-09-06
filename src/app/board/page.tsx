@@ -1,11 +1,27 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { collection, onSnapshot, query, orderBy, doc, getDoc } from 'firebase/firestore'
+import { collection, onSnapshot, query, orderBy, doc, getDoc, Timestamp } from 'firebase/firestore' // ✅ Timestamp 추가
 import { auth, db } from '@/lib/firebase'
 import styles from './board.module.css'
 import PostCard from '../components/PostCard'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link' // ✅ Link 추가
+import Image from 'next/image'
+
+// Firestore 원본 포스트 타입(필요 필드만)
+type PostDoc = {
+  title?: string
+  category?: string
+  authorName?: string
+  authorRole?: string
+  major?: string
+  middle?: string
+  minor?: string
+  createdAt?: Timestamp
+  likes?: string[]
+  comments?: Array<Record<string, unknown>> // ✅ any 제거
+}
 
 interface Post {
   id: string
@@ -16,11 +32,11 @@ interface Post {
   major: string
   middle: string
   minor: string
-  createdAt: any
+  createdAt: Timestamp | undefined         // ✅ any → Timestamp | undefined
   heartCount?: number
   commentCount?: number
   likes?: string[]
-  comments?: { text: string; [key: string]: any }[]
+  comments?: Array<Record<string, unknown>> // ✅ any 제거
 }
 
 export default function BoardPage() {
@@ -34,11 +50,23 @@ export default function BoardPage() {
   useEffect(() => {
     const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'))
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const newPosts = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...(doc.data() as any),
-      }))
-      setPosts(newPosts as Post[])
+      const newPosts: Post[] = snapshot.docs.map((d) => {
+        const data = d.data() as PostDoc
+        return {
+          id: d.id,
+          title: data.title ?? '',
+          category: data.category ?? '',
+          authorName: data.authorName ?? '',
+          authorRole: data.authorRole ?? '',
+          major: data.major ?? '',
+          middle: data.middle ?? '',
+          minor: data.minor ?? '',
+          createdAt: data.createdAt,
+          likes: data.likes,
+          comments: data.comments,
+        }
+      })
+      setPosts(newPosts)
     })
     return () => unsubscribe()
   }, [])
@@ -93,8 +121,8 @@ export default function BoardPage() {
       <div className={styles.headerRow}>
         <h2 className={styles.title}>자유게시판</h2>
         <div className={styles.iconGroup}>
-          <img src="/sort.svg" alt="정렬" onClick={() => setShowSortMenu(!showSortMenu)} />
-          <img src="/search.svg" alt="검색" onClick={() => router.push('/board/search')} />
+          <Image src="/sort.svg" alt="정렬" onClick={() => setShowSortMenu(!showSortMenu)} />
+          <Image src="/search.svg" alt="검색" onClick={() => router.push('/board/search')} />
         </div>
       </div>
 
@@ -113,7 +141,8 @@ export default function BoardPage() {
           {activeTab === '내 관심사' && (
             <div className={styles.empty}>
               아직 게시글이 없네요..{' '}
-              <a className={styles.emptyLink} href="/board/write">게시하러 가세요!</a>
+              {/* ✅ a → Link로 교체 (no-html-link-for-pages 해결) */}
+              <Link className={styles.emptyLink} href="/board/write">게시하러 가세요!</Link>
             </div>
           )}
         </div>
@@ -125,10 +154,6 @@ export default function BoardPage() {
               id={post.id}
               category={post.category}
               title={post.title}
-              authorName={post.authorName}
-              authorRole={post.authorRole}
-              major={post.major}
-              middle={post.middle}
               minor={post.minor}
             />
           ))}
@@ -140,7 +165,7 @@ export default function BoardPage() {
         className={styles.writeButton}
         onClick={() => (window.location.href = '/board/write')}
       >
-        <img src="/write.svg" alt="글쓰기" />
+        <Image src="/write.svg" alt="글쓰기" />
       </button>
     </div>
   )

@@ -12,6 +12,7 @@ import {
 import { auth, db } from '@/lib/firebase'
 import { categoryData } from '@/data/categoryData'
 import styles from './write.module.css'
+import Image from 'next/image'
 
 export default function WritePage() {
   const router = useRouter()
@@ -80,7 +81,7 @@ export default function WritePage() {
       {/* 상단바 */}
       <div className={styles.header}>
         <button className={styles.backBtn} onClick={() => router.back()}>
-          <img src="/back.svg" alt="뒤로가기" />
+          <Image src="/back.svg" alt="뒤로가기" />
         </button>
         <button className={styles.submitBtn} onClick={handleSubmit}>
           게시하기

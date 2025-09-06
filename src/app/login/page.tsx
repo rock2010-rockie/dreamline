@@ -4,14 +4,13 @@ import styles from './login.module.css'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { signInWithEmailAndPassword } from 'firebase/auth'
-import { auth } from '@/lib/firebase'
+import { auth, db } from '@/lib/firebase'
 import { getDoc, doc } from 'firebase/firestore'
-import { db } from '@/lib/firebase' // Firestore 객체 추가
 
 export default function LoginPage() {
   const router = useRouter()
   const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('') 
+  const [password, setPassword] = useState('')
   const [error, setError] = useState('')
 
   const handleLogin = async () => {
@@ -31,6 +30,7 @@ export default function LoginPage() {
         setError('회원 역할 정보가 없습니다.')
       }
     } catch (err) {
+      console.error(err) // ✅ err 실제 사용
       setError('이메일 또는 비밀번호가 올바르지 않습니다.')
     }
   }

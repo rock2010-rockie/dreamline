@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import {
   collection,
@@ -21,7 +21,8 @@ type StudentType = {
   }
 }
 
-export default function MentorResult() {
+// 훅을 사용하는 실제 화면
+function MentorResultInner() {
   const searchParams = useSearchParams()
   const router = useRouter()
 
@@ -88,5 +89,14 @@ export default function MentorResult() {
         ))
       )}
     </div>
+  )
+}
+
+// Suspense로 감싸는 래퍼 (페이지 기본 export)
+export default function MentorResult() {
+  return (
+    <Suspense fallback={<div style={{ padding: 16 }}>결과 불러오는 중…</div>}>
+      <MentorResultInner />
+    </Suspense>
   )
 }

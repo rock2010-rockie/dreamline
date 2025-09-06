@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { db } from '@/lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
-import styles from './taskDetail.module.css'; 
+import { doc, getDoc, Timestamp } from 'firebase/firestore';
+import styles from './taskDetail.module.css';
 
 interface Assignment {
   title: string;
@@ -13,15 +13,12 @@ interface Assignment {
   progress: number;
   isCompleted: boolean;
   createdBy: string;
-  createdAt?: any;
+  createdAt?: Timestamp;
 }
 
 export default function TaskDetailPage() {
   const router = useRouter();
-  const params = useParams();
-
-  const raw = (params as any)?.chatId as string | string[] | undefined;
-  const chatId = Array.isArray(raw) ? raw[0] : raw;
+  const { chatId } = useParams<{ chatId: string }>();
 
   const [data, setData] = useState<Assignment | null>(null);
   const [loading, setLoading] = useState(true);
@@ -40,15 +37,15 @@ export default function TaskDetailPage() {
         const snap = await getDoc(ref);
 
         if (snap.exists() && !cancelled) {
-          const raw = snap.data() ?? {};
+          const rawData = snap.data() ?? {};
           setData({
-            title: String(raw.title ?? ''),
-            content: String(raw.content ?? ''),
-            steps: Array.isArray(raw.steps) ? raw.steps : [],
-            progress: Number(raw.progress ?? 0),
-            isCompleted: Boolean(raw.isCompleted ?? false),
-            createdBy: String(raw.createdBy ?? ''),
-            createdAt: raw.createdAt,
+            title: String(rawData.title ?? ''),
+            content: String(rawData.content ?? ''),
+            steps: Array.isArray(rawData.steps) ? rawData.steps : [],
+            progress: Number(rawData.progress ?? 0),
+            isCompleted: Boolean(rawData.isCompleted ?? false),
+            createdBy: String(rawData.createdBy ?? ''),
+            createdAt: rawData.createdAt as Timestamp | undefined,
           });
         }
       } finally {

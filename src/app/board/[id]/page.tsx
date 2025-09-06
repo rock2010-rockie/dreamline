@@ -20,8 +20,19 @@ import {
 } from 'firebase/firestore'
 import { auth, db } from '@/lib/firebase'
 import styles from './postDetail.module.css'
+import Image from 'next/image'
 
 type Role = 'mentor' | 'student' | string
+
+// ✅ 게시글 문서 타입
+interface PostDoc {
+  authorId?: string
+  authorName?: string
+  authorRole?: Role
+  title?: string
+  content?: string
+  likes?: string[]            // uid 배열
+}
 
 interface Comment {
   id: string
@@ -31,19 +42,28 @@ interface Comment {
   authorId?: string
 }
 
+// ✅ 댓글 원본 문서 타입
+type CommentDoc = {
+  text?: string
+  authorName?: string
+  authorRole?: Role
+  authorId?: string
+  // createdAt?: Timestamp  // (표시는 안 쓰지만 참고용)
+}
+
 export default function PostDetailPage() {
-  const { id } = useParams()
+  const { id } = useParams<{ id: string }>()   // ✅ 제네릭으로 string 보장
   const router = useRouter()
 
-  const [post, setPost] = useState<any>(null)
+  const [post, setPost] = useState<PostDoc | null>(null)   // ✅ any 제거
   const [liked, setLiked] = useState(false)
   const [likesCount, setLikesCount] = useState(0)
   const [comment, setComment] = useState('')
   const [comments, setComments] = useState<Comment[]>([])
 
   // 역할 문자열 정규화 (한글/영문 모두 허용)
-  const normalizeRole = (raw?: any): 'mentor' | 'student' | null => {
-    if (!raw) return null
+  const normalizeRole = (raw?: unknown): 'mentor' | 'student' | null => { // ✅ any → unknown
+    if (raw == null) return null
     const s = String(raw).trim().toLowerCase()
     if (s === 'mentor' || s === '멘토') return 'mentor'
     if (s === 'student' || s === '학생') return 'student'
@@ -51,7 +71,7 @@ export default function PostDetailPage() {
   }
 
   // 이름+역할로 users에서 uid 찾기 (authorId 누락 대비)
-  const findUserIdByNameRole = async (name?: string, rawRole?: Role) => {
+  const findUserIdByNameRole = async (name?: string, rawRole?: Role): Promise<string | null> => {
     const role = normalizeRole(rawRole)
     if (!name || !role) return null
     const q = query(
@@ -87,8 +107,8 @@ export default function PostDetailPage() {
         const u = await getDoc(doc(db, 'users', maybeId))
         role = normalizeRole(u.data()?.role)
       }
-      let uid = maybeId || null
-      if (!uid) uid = await findUserIdByNameRole(nameHint, role || rawRole)
+      let uid: string | null = maybeId || null
+      if (!uid) uid = await findUserIdByNameRole(nameHint, (role ?? rawRole) as Role | undefined)
       if (!uid || !role) {
         alert('이동할 사용자 정보를 찾지 못했어요.')
         return
@@ -102,27 +122,27 @@ export default function PostDetailPage() {
 
   useEffect(() => {
     const fetchPost = async () => {
-      const docRef = doc(db, 'posts', id as string)
+      const docRef = doc(db, 'posts', id)
       const snapshot = await getDoc(docRef)
-      const data = snapshot.data()
+      const data = snapshot.data() as PostDoc | undefined
       if (!data) return
       setPost(data)
       setLikesCount(data.likes?.length || 0)
 
       const user = auth.currentUser
-      if (user && data.likes?.includes(user.uid)) setLiked(true)
+      if (user && (data.likes ?? []).includes(user.uid)) setLiked(true)
     }
 
     const unsub = onSnapshot(
-      query(collection(db, 'posts', id as string, 'comments'), orderBy('createdAt', 'asc')),
+      query(collection(db, 'posts', id, 'comments'), orderBy('createdAt', 'asc')),
       (snap) => {
         const list = snap.docs.map((d) => {
-          const c = d.data() as any
+          const c = d.data() as CommentDoc
           return {
             id: d.id,
-            text: c.text,
-            authorName: c.authorName,
-            authorRole: c.authorRole,
+            text: c.text ?? '',
+            authorName: c.authorName ?? '익명',
+            authorRole: c.authorRole ?? 'student',
             authorId: c.authorId,
           } as Comment
         })
@@ -137,7 +157,7 @@ export default function PostDetailPage() {
   const handleLike = async () => {
     const user = auth.currentUser
     if (!user || !post) return
-    const postRef = doc(db, 'posts', id as string)
+    const postRef = doc(db, 'posts', id)
 
     if (liked) {
       await updateDoc(postRef, { likes: arrayRemove(user.uid) })
@@ -154,9 +174,9 @@ export default function PostDetailPage() {
     const user = auth.currentUser
     if (!user || !comment.trim()) return
     const userDoc = await getDoc(doc(db, 'users', user.uid))
-    const userData = userDoc.data()
+    const userData = userDoc.data() as { name?: string; role?: Role } | undefined
 
-    await addDoc(collection(db, 'posts', id as string, 'comments'), {
+    await addDoc(collection(db, 'posts', id, 'comments'), {
       text: comment.trim(),
       authorName: userData?.name || '익명',
       authorRole: userData?.role || 'student',
@@ -176,7 +196,7 @@ export default function PostDetailPage() {
 
       {/* 글쓴이 */}
       <div className={styles.userInfo}>
-        <img
+        <Image
           src="/user.svg"
           alt="유저 아이콘"
           className={styles.userIcon}
@@ -198,15 +218,12 @@ export default function PostDetailPage() {
       {/* 제목 */}
       <h2 className={styles.title}>{post.title}</h2>
 
-      {/* 이미지 */}
-     
-
       {/* 본문 */}
       <p className={styles.content}>{post.content}</p>
 
       {/* 좋아요 */}
       <div className={styles.likeBox} onClick={handleLike}>
-        <img
+        <Image
           src={liked ? '/redheart.svg' : '/heart.svg'}
           alt="좋아요"
           className={styles.heartIcon}
@@ -220,7 +237,7 @@ export default function PostDetailPage() {
       {/* 댓글 목록 */}
       {comments.map((c) => (
         <div key={c.id} className={styles.comment}>
-          <img
+          <Image
             src="/user.svg"
             className={styles.commentIcon}
             alt="유저"

@@ -10,16 +10,22 @@ import {
   doc,
   getDoc,
   updateDoc,
-  setDoc
+  setDoc,
+  Timestamp,
 } from 'firebase/firestore'
 import styles from './requestPage.module.css'
-import { useRouter } from 'next/navigation'
+
+type RequestDoc = {
+  from?: string
+  status?: string
+  timestamp?: Timestamp
+}
 
 type RequestType = {
   id: string
   from: string
   status: string
-  timestamp: any
+  timestamp?: Timestamp
 }
 
 type UserInfo = {
@@ -30,7 +36,6 @@ type UserInfo = {
 export default function RequestPage() {
   const [requests, setRequests] = useState<{ request: RequestType; user: UserInfo }[]>([])
   const [loading, setLoading] = useState(true)
-  const router = useRouter()
 
   useEffect(() => {
     const fetchRequests = async () => {
@@ -44,27 +49,31 @@ export default function RequestPage() {
       )
       const snapshot = await getDocs(q)
 
-      const fetchedRequests: { request: RequestType; user: UserInfo }[] = []
+      const fetched: { request: RequestType; user: UserInfo }[] = []
 
       for (const docSnap of snapshot.docs) {
-        const requestData = docSnap.data() as RequestType
-        const userDoc = await getDoc(doc(db, 'users', requestData.from))
+        const rd = (docSnap.data() as RequestDoc) || {}
+        if (!rd.from || !rd.status) continue
+
+        const userDoc = await getDoc(doc(db, 'users', rd.from))
         if (userDoc.exists()) {
-          const userData = userDoc.data() as UserInfo
-          fetchedRequests.push({
+          const userData = (userDoc.data() as UserInfo) || { name: '알 수 없음' }
+          fetched.push({
             request: {
-              ...requestData,
-              id: docSnap.id
+              id: docSnap.id,
+              from: rd.from,
+              status: rd.status,
+              timestamp: rd.timestamp,
             },
             user: {
               name: userData.name,
-            //  note: userData.note || '경력/특이사항'
-            }
+              // note: userData.note || '경력/특이사항'
+            },
           })
         }
       }
 
-      setRequests(fetchedRequests)
+      setRequests(fetched)
       setLoading(false)
     }
 
@@ -75,42 +84,36 @@ export default function RequestPage() {
     const currentUser = auth.currentUser
     if (!currentUser) return
 
-    // 요청 문서 가져오기
     const requestRef = doc(db, 'requests', requestId)
     const requestSnap = await getDoc(requestRef)
     if (!requestSnap.exists()) return
 
-    const requestData = requestSnap.data() as RequestType
+    const requestData = (requestSnap.data() as RequestDoc) || {}
     const fromId = requestData.from
     const toId = currentUser.uid
+    if (!fromId) return
 
-    // 요청 상태 업데이트
     await updateDoc(requestRef, { status: 'accepted' })
 
-    // 채팅방 ID 만들기 (두 UID를 정렬해서 고정된 ID로)
     const chatId = [fromId, toId].sort().join('_')
     const chatRef = doc(db, 'chats', chatId)
 
-    // chats 문서 생성 또는 업데이트
     await updateDoc(chatRef, {
       participants: [fromId, toId],
-      createdAt: new Date()
+      createdAt: new Date(),
     }).catch(async () => {
       await setDoc(chatRef, {
         participants: [fromId, toId],
-        createdAt: new Date()
+        createdAt: new Date(),
       })
     })
 
-    // 요청 목록에서 제거
     setRequests((prev) => prev.filter((item) => item.request.id !== requestId))
     alert('채팅이 수락되었습니다!')
   }
 
   const handleReject = async (requestId: string) => {
-    await updateDoc(doc(db, 'requests', requestId), {
-      status: 'rejected'
-    })
+    await updateDoc(doc(db, 'requests', requestId), { status: 'rejected' })
     setRequests((prev) => prev.filter((item) => item.request.id !== requestId))
   }
 
@@ -131,16 +134,10 @@ export default function RequestPage() {
               <p className={styles.note}>{user.note}</p>
             </div>
             <div className={styles.buttons}>
-              <button
-                className={styles.accept}
-                onClick={() => handleAccept(request.id)}
-              >
+              <button className={styles.accept} onClick={() => handleAccept(request.id)}>
                 수락
               </button>
-              <button
-                className={styles.reject}
-                onClick={() => handleReject(request.id)}
-              >
+              <button className={styles.reject} onClick={() => handleReject(request.id)}>
                 거절
               </button>
             </div>

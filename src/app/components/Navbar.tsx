@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react'
 import { auth, db } from '@/lib/firebase'
 import { doc, getDoc } from 'firebase/firestore'
 import styles from './Navbar.module.css'
+import Image from 'next/image'
 
 export default function Navbar() {
   const pathname = usePathname()
@@ -38,28 +39,28 @@ export default function Navbar() {
   return (
     <nav className={styles.navbar}>
       <Link href={homePath}>
-        <img
+        <Image
           src="/home.svg"
           alt="홈"
           className={pathname === homePath ? styles.active : styles.icon}
         />
       </Link>
       <Link href="/chat">
-        <img
+        <Image
           src="/chat.svg"
           alt="채팅"
           className={pathname === '/chat' ? styles.active : styles.icon}
         />
       </Link>
       <Link href="/board">
-        <img
+        <Image
           src="/board.svg"
           alt="자유게시판"
           className={pathname === '/board' ? styles.active : styles.icon}
         />
       </Link>
       <Link href={mypagePath}>
-        <img
+        <Image
           src="/user.svg"
           alt="마이페이지"
           className={pathname === mypagePath ? styles.active : styles.icon}

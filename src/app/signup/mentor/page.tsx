@@ -2,12 +2,18 @@
 
 import styles from './mentor.module.css'
 import { useState } from 'react'
-import { categoryData } from '@/data/categoryData';
+import { categoryData } from '@/data/categoryData'
 
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
-import { auth, db } from '@/lib/firebase';
-import { useRouter } from 'next/navigation';
+import { createUserWithEmailAndPassword } from 'firebase/auth'
+import { doc, setDoc } from 'firebase/firestore'
+import { auth, db } from '@/lib/firebase'
+import { useRouter } from 'next/navigation'
+
+// categoryData를 딕셔너리로 사용할 때의 타입
+type CategoryDict = {
+  [major: string]: { [middle: string]: string[] }
+}
+const dict = categoryData as unknown as CategoryDict
 
 export default function MentorSignupPage() {
   const [name, setName] = useState('')
@@ -20,19 +26,19 @@ export default function MentorSignupPage() {
   const [career, setCareer] = useState('')
   const router = useRouter()
 
-  const majorList = Object.keys(categoryData)
-  const middleList = major ? Object.keys(categoryData[major] || {}) : []
-  const minorList = major && middle ? categoryData[major][middle] || [] : []
+  const majorList = Object.keys(dict)
+  const middleList = major ? Object.keys(dict[major] || {}) : []
+  const minorList = major && middle ? dict[major][middle] || [] : []
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (): Promise<void> => {
     if (!name || !email || !password || !age) {
-      alert('모든 정보를 입력해주세요.');
-      return;
+      alert('모든 정보를 입력해주세요.')
+      return
     }
 
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password)
+      const user = userCredential.user
 
       await setDoc(doc(db, 'users', user.uid), {
         uid: user.uid,
@@ -46,17 +52,18 @@ export default function MentorSignupPage() {
         role: 'mentor',
         createdAt: new Date(),
 
-        // ✅ 신뢰도 기본값 (50점, 보통) — 시스템 시드 1표
-        ratingSum: 3,        // 시스템 시드 1표 = 3점
+        // ✅ 신뢰도 기본값 (시드 1표 = 3점)
+        ratingSum: 3,
         ratingCount: 1,
-        ratingAvg: 3.0,      // 캐시(검색/정렬용)
-        trustLevel: '중간',  // 기준: 낮음 0~2, 중간 2~4, 높음 4~5
-        trustScore: 3.0,     // ⚠️ 이제 0~5 스케일로 저장
-      });
+        ratingAvg: 3.0,
+        trustLevel: '중간',
+        trustScore: 3.0, // 0~5 스케일
+      })
 
-      router.push('/login'); // ✅ 로그인 화면으로 이동
-    } catch (error: any) {
-      alert('회원가입 실패: ' + error.message);
+      router.push('/login')
+    } catch (error: unknown) { // ✅ any 제거
+      const msg = error instanceof Error ? error.message : String(error)
+      alert('회원가입 실패: ' + msg)
     }
   }
 

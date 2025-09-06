@@ -79,7 +79,6 @@ export default function StudentHomePage() {
   }, [router])
 
   const goFind = () => router.push('/student/search') // ← 기존 검색 화면으로 이동
-  const goDetail = (id: string) => router.push(`/mentor/detail/${id}`) // 기존 상세/요청 경로
 
   return (
     <div className={styles.pageWrap}>

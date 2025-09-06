@@ -13,15 +13,17 @@ import {
   getDoc,
   updateDoc,
   arrayUnion,
+  Timestamp,            // ✅ Timestamp 타입 추가
 } from 'firebase/firestore'
 import styles from './chatPage.module.css'
+import Image from 'next/image'
 
 interface Message {
   id: string
   sender: string
   text?: string
   imageUrl?: string
-  timestamp: any
+  timestamp: Timestamp        // ✅ any → Timestamp
   readBy?: string[]
 }
 
@@ -32,11 +34,17 @@ interface Assignment {
   progress: number
   isCompleted: boolean
   createdBy: string
-  createdAt?: any
+  createdAt?: Timestamp       // ✅ any → Timestamp | undefined
 }
 
+// 채팅 문서의 participants 타입
+type ChatDoc = { participants?: string[] }
+
+// 사용자 문서에서 이름만 필요
+type UserDoc = { name?: string; role?: string }
+
 export default function ChatRoomPage() {
-  const { chatId } = useParams()
+  const { chatId } = useParams<{ chatId: string }>()  // ✅ 제네릭으로 string 보장
   const router = useRouter()
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
@@ -60,7 +68,7 @@ export default function ChatRoomPage() {
   useEffect(() => {
     const u = auth.currentUser
     if (!u) return
-    getDoc(doc(db, 'users', u.uid)).then(s => setUserRole(s.data()?.role || null))
+    getDoc(doc(db, 'users', u.uid)).then(s => setUserRole((s.data() as UserDoc | undefined)?.role || null))
   }, [])
 
   // ✅ 상대방 정보 가져오기
@@ -68,11 +76,11 @@ export default function ChatRoomPage() {
     const fetchOtherUser = async () => {
       if (!chatId || !currentUser) return
 
-      const chatDoc = await getDoc(doc(db, 'chats', chatId as string))
-      const chatData = chatDoc.data()
+      const chatDoc = await getDoc(doc(db, 'chats', chatId))
+      const chatData = chatDoc.data() as ChatDoc | undefined
       if (!chatData) return
 
-      const participants = chatData.participants as string[]
+      const participants = chatData.participants
       if (!participants || participants.length !== 2) return
 
       const otherId = participants.find((uid) => uid !== currentUser.uid)
@@ -81,7 +89,7 @@ export default function ChatRoomPage() {
       setOtherUserId(otherId)
 
       const otherUserDoc = await getDoc(doc(db, 'users', otherId))
-      const otherUserData = otherUserDoc.data()
+      const otherUserData = otherUserDoc.data() as UserDoc | undefined
       setOtherName(otherUserData?.name || '상대방')
     }
 
@@ -92,14 +100,14 @@ export default function ChatRoomPage() {
   useEffect(() => {
     if (!chatId || !currentUser) return
 
-    const q = query(collection(db, 'chats', chatId as string, 'messages'), orderBy('timestamp'))
+    const q = query(collection(db, 'chats', chatId, 'messages'), orderBy('timestamp'))
 
     const unsubscribe = onSnapshot(q, async (snapshot) => {
       const msgs: Message[] = []
 
       for (const docSnap of snapshot.docs) {
         const data = docSnap.data() as Omit<Message, 'id'>
-        const msg = {
+        const msg: Message = {
           id: docSnap.id,
           ...data,
           readBy: data.readBy || [],
@@ -107,12 +115,10 @@ export default function ChatRoomPage() {
         msgs.push(msg)
 
         const isNotMine = msg.sender !== currentUser.uid
-        const notYetRead = !msg.readBy.includes(currentUser.uid)
+        const notYetRead = !(msg.readBy ?? []).includes(currentUser.uid)
 
         if (isNotMine && notYetRead) {
-          await updateDoc(docSnap.ref, {
-            readBy: arrayUnion(currentUser.uid),
-          })
+          await updateDoc(docSnap.ref, { readBy: arrayUnion(currentUser.uid) })
         }
       }
 
@@ -132,40 +138,44 @@ export default function ChatRoomPage() {
   // 과제 실시간 구독
   useEffect(() => {
     if (!chatId) return
-    const ref = doc(db, 'chats', chatId as string, 'assignment', 'current')
-    const unsub = onSnapshot(ref, (snap) => {
-      if (!snap.exists()) {
-        setAssignment(null)
-        return
-      }
-      const raw = snap.data() as Partial<Assignment>
-      const progressNum = Math.min(100, Math.max(0, Number(raw.progress ?? 0)))
-      const data: Assignment = {
-        title: String(raw.title ?? ''),
-        content: String(raw.content ?? ''),
-        steps: Array.isArray(raw.steps) ? (raw.steps as string[]) : [],
-        progress: progressNum,
-        isCompleted: Boolean(raw.isCompleted ?? false), // ★ 100%라고 자동 완료 X
-        createdBy: String(raw.createdBy ?? ''),
-        createdAt: raw.createdAt,
-      }
+    const ref = doc(db, 'chats', chatId, 'assignment', 'current')
+    const unsub = onSnapshot(
+      ref,
+      (snap) => {
+        if (!snap.exists()) {
+          setAssignment(null)
+          return
+        }
+        const raw = snap.data() as Partial<Assignment> & { createdAt?: Timestamp }
+        const progressNum = Math.min(100, Math.max(0, Number(raw.progress ?? 0)))
+        const data: Assignment = {
+          title: String(raw.title ?? ''),
+          content: String(raw.content ?? ''),
+          steps: Array.isArray(raw.steps) ? (raw.steps as string[]) : [],
+          progress: progressNum,
+          isCompleted: Boolean(raw.isCompleted ?? false),
+          createdBy: String(raw.createdBy ?? ''),
+          createdAt: raw.createdAt,
+        }
 
-      if (data.isCompleted) {           // ★ 완료된 경우에만 숨김
-        setAssignment(null)
-      } else {
-        setAssignment(data)             // ★ 100%여도 버튼을 보여주기 위해 유지
-      }
-    }, () => setAssignment(null))
+        if (data.isCompleted) {
+          setAssignment(null)
+        } else {
+          setAssignment(data)
+        }
+      },
+      () => setAssignment(null)
+    )
     return () => unsub()
   }, [chatId])
 
   const sendMessage = async () => {
     if (!input.trim() || !chatId || !currentUser) return
 
-    await addDoc(collection(db, 'chats', chatId as string, 'messages'), {
+    await addDoc(collection(db, 'chats', chatId, 'messages'), {
       sender: currentUser.uid,
       text: input.trim(),
-      timestamp: new Date(),
+      timestamp: new Date(),              // Date로 저장해도 읽을 때 Timestamp로 역직렬화됨
       readBy: [currentUser.uid],
     })
 
@@ -187,51 +197,42 @@ export default function ChatRoomPage() {
   // 진행률 업데이트 (멘토만)
   const updateProgress = async (value: number) => {
     if (!isMentor || !chatId) return
-    await updateDoc(doc(db, 'chats', chatId as string, 'assignment', 'current'), {
+    await updateDoc(doc(db, 'chats', chatId, 'assignment', 'current'), {
       progress: value,
-      // isCompleted: value >= 100,  // ★ 제거: 자동 완료 금지
     })
   }
 
   // ★ 추가: 100%에서 눌러서 완료 처리
   const finishAssignment = async () => {
     if (!chatId) return
-    await updateDoc(doc(db, 'chats', chatId as string, 'assignment', 'current'), {
+    await updateDoc(doc(db, 'chats', chatId, 'assignment', 'current'), {
       isCompleted: true,
     })
     setIsTaskExpanded(false)
   }
 
-  const formatTime = (timestamp: any) => {
-    if (!timestamp?.toDate) return ''
+  // ✅ any 제거: Timestamp를 받아서 포맷
+  const formatTime = (timestamp: Timestamp | undefined) => {
+    if (!timestamp) return ''
     const date = timestamp.toDate()
     return date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
   }
 
-  const formatDate = (timestamp: any) => {
-    if (!timestamp?.toDate) return ''
+  const formatDate = (timestamp: Timestamp | undefined) => {
+    if (!timestamp) return ''
     const date = timestamp.toDate()
     return `<${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}>`
   }
 
-  const isDifferentDay = (current: any, previous: any) => {
-    const cur = current.toDate?.()
-    const prev = previous?.toDate?.()
+  const isDifferentDay = (current: Timestamp, previous?: Timestamp) => {
+    const cur = current.toDate()
+    const prev = previous?.toDate()
     return (
       !prev ||
       cur.getFullYear() !== prev.getFullYear() ||
       cur.getMonth() !== prev.getMonth() ||
       cur.getDate() !== prev.getDate()
     )
-  }
-
-  // ✅ 추가: 과제 패널 클릭 시 동작 (1회: 펼치기, 2회: 상세 페이지 이동)
-  const handleTaskClick = () => {
-    if (!isTaskExpanded) {
-      setIsTaskExpanded(true)
-    } else {
-      router.push(`/chat/${chatId}/task/detail`)
-    }
   }
 
   if (!currentUser || !otherUserId) return <div>로딩 중...</div>
@@ -302,7 +303,6 @@ export default function ChatRoomPage() {
                 {assignment.progress === 100 && !assignment.isCompleted && (
                   <button
                     onClick={finishAssignment}
-                    // CSS 변경 없이도 예쁘게 보이도록 최소한의 인라인 스타일만 사용
                     style={{
                       marginTop: 12,
                       width: '100%',
@@ -331,7 +331,7 @@ export default function ChatRoomPage() {
         ) : (
           messages.map((msg, index) => {
             const isMyMessage = msg.sender === currentUser.uid
-            const isRead = isMyMessage && msg.readBy?.includes(otherUserId)
+            const isRead = isMyMessage && (msg.readBy ?? []).includes(otherUserId)
 
             const isLastMyMessage = (() => {
               for (let i = messages.length - 1; i >= 0; i--) {
@@ -358,7 +358,7 @@ export default function ChatRoomPage() {
                   <div className={isMyMessage ? styles.myMessage : styles.otherMessage}>
                     {msg.text && <span>{msg.text}</span>}
                     {msg.imageUrl && (
-                      <img src={msg.imageUrl} alt="전송한 이미지" className={styles.image} />
+                      <Image src={msg.imageUrl} alt="전송한 이미지" className={styles.image} />
                     )}
                   </div>
                   <div className={isMyMessage ? styles.myTimestamp : styles.otherTimestamp}>

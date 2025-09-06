@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import styles from './searchstudent.module.css';
 import { categoryData } from '@/data/categoryData';
+import Image from 'next/image';
 
 export default function StudentHome() {
   const router = useRouter();
@@ -45,7 +46,7 @@ export default function StudentHome() {
           className={styles.backBtn}
           onClick={() => router.push('/student')}
         >
-          <img src="/back.svg" alt="뒤로가기" className={styles.backIcon} />
+          <Image src="/back.svg" alt="뒤로가기" className={styles.backIcon} />
         </button>
         <div className={styles.title}>멘토 매칭</div>
       </div>
