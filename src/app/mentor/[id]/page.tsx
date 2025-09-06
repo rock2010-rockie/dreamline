@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams,useRouter } from 'next/navigation'
 import { doc, getDoc, addDoc, collection } from 'firebase/firestore'
 import { db, auth } from '@/lib/firebase'
 import styles from './studentDetail.module.css'
@@ -24,7 +24,7 @@ const removeNumberPrefix = (str?: string) => {
 export default function StudentDetail() {
   const param = useParams() as { id: string }
   const id = param.id
-
+  const router = useRouter()
   const [student, setStudent] = useState<StudentType | null>(null)
 
   useEffect(() => {
@@ -58,9 +58,9 @@ export default function StudentDetail() {
   return (
     <div className={styles.container}>
       {/* ✅ 뒤로가기 버튼 */}
-      <button onClick={() => history.back()} className={styles.backBtn}>
-        <Image src="/back.svg" alt="뒤로가기" />
-      </button>
+      <button className={styles.back} onClick={() => router.back()} aria-label="뒤로가기">
+          &lt;
+        </button>
 
       <div className={styles.card}>
         <div className={styles.icon}>👤</div>
