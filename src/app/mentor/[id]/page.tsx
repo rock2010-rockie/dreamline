@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation'
 import { doc, getDoc, addDoc, collection } from 'firebase/firestore'
 import { db, auth } from '@/lib/firebase'
 import styles from './studentDetail.module.css'
+import Image from 'next/image'   // ✅ 추가
 
 type StudentType = {
   id: string
@@ -56,6 +57,11 @@ export default function StudentDetail() {
 
   return (
     <div className={styles.container}>
+      {/* ✅ 뒤로가기 버튼 */}
+      <button onClick={() => history.back()} className={styles.backBtn}>
+        <Image src="/back.svg" alt="뒤로가기" width={24} height={24} />
+      </button>
+
       <div className={styles.card}>
         <div className={styles.icon}>👤</div>
         <h2 className={styles.name}>{student.name}</h2>

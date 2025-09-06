@@ -150,7 +150,7 @@
   align-items: center;
   gap: 4px;
   margin-bottom: 20px; /* 좋아요와 댓글 사이 */
-  margin-left: 310px
+ left: 0;
 }
 
 .comment {
