@@ -3,7 +3,7 @@
   flex-direction: column;
   align-items: center;
   padding: 24px;
-  z-index: 1;
+
 }
 
 .card {
@@ -55,5 +55,5 @@
   font-size: 20px;
   margin: 0 8px 0 4px;
   cursor: pointer;
-   z-index: 1000;  
+
 }
