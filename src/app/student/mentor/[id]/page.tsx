@@ -12,9 +12,10 @@ import {
   query,
   where,
   getDocs,
+  Timestamp,           // ✅ 추가: rating의 시간 타입
 } from 'firebase/firestore'
 import { db, auth } from '@/lib/firebase'
-import { onAuthStateChanged } from 'firebase/auth'
+import { onAuthStateChanged, User } from 'firebase/auth' // ✅ 추가: User 타입
 import styles from './mentorDetail.module.css'
 
 interface MentorData {
@@ -29,6 +30,16 @@ interface MentorData {
   ratingAvg?: number
   trustLevel?: '낮음' | '중간' | '높음'
   trustScore?: number
+}
+
+// ✅ 채팅 문서 타입 (participants만 사용)
+type ChatDoc = {
+  participants?: string[]
+}
+
+// ✅ 내 평점 문서 타입 (마지막 평가 시각)
+type RatingDoc = {
+  lastRatedAt?: Timestamp
 }
 
 export default function MentorDetailPage() {
@@ -63,7 +74,7 @@ export default function MentorDetailPage() {
         query(collection(db, 'chats'), where('participants', 'array-contains', me.uid))
       )
       const exists = qs.docs.some(d => {
-        const pts = (d.data() as any)?.participants as string[] | undefined
+        const pts = (d.data() as ChatDoc)?.participants ?? []
         return Array.isArray(pts) && pts.includes(id)
       })
       setHasChat(exists)
@@ -74,9 +85,9 @@ export default function MentorDetailPage() {
 
   const cleanCategory = (text: string) => text.replace(/^\d+\./, '')
 
-  const getUserNow = async () => {
+  const getUserNow = async (): Promise<User | null> => {
     if (auth.currentUser) return auth.currentUser
-    return await new Promise<any>((resolve) => {
+    return await new Promise<User | null>((resolve) => {
       const unsub = onAuthStateChanged(auth, (u) => {
         unsub()
         resolve(u)
@@ -96,7 +107,7 @@ export default function MentorDetailPage() {
       const mySnap = await getDoc(myRatingRef)
 
       if (mySnap.exists()) {
-        const last = (mySnap.data() as any)?.lastRatedAt
+        const last = (mySnap.data() as RatingDoc)?.lastRatedAt
         if (last?.toDate) {
           const lastDt: Date = last.toDate()
           const nextAllowed = new Date(lastDt.getTime() + 7 * 24 * 60 * 60 * 1000)

@@ -3,13 +3,29 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { auth, db } from '@/lib/firebase'
-import { doc, getDoc, setDoc, deleteField } from 'firebase/firestore' // ← deleteField 추가
+import {
+  doc,
+  getDoc,
+  setDoc,
+  deleteField,
+  type FieldValue,        // ✅ deleteField 반환 타입
+} from 'firebase/firestore'
 import styles from './editPage.module.css'
 import { categoryData } from '@/data/categoryData'
 
-// categoryData가 객체(딕셔너리)일 때의 타입
+// ✅ DB 사용자 스키마(읽기 전용에 사용)
+type UserDoc = {
+  name?: string
+  age?: number | string
+  role?: 'student' | 'mentor' | string
+  major?: string
+  middle?: string
+  minor?: string
+}
+
+// ✅ categoryData 객체(딕셔너리) 타입
 type CategoryDict = {
-  [major: string]: { [middle: string]: string[] }  // 소분류 배열
+  [major: string]: { [middle: string]: string[] }
 }
 const dict = categoryData as unknown as CategoryDict
 
@@ -46,7 +62,7 @@ export default function StudentMypageEditPage() {
 
       const ref = doc(db, 'users', user.uid)
       const snap = await getDoc(ref)
-      const data = snap.data() || {}
+      const data = (snap.data() as UserDoc) || {}
 
       // age 안전 변환(문자열 "16"도 허용)
       const parsedAge =
@@ -80,49 +96,49 @@ export default function StudentMypageEditPage() {
     setMinor('')
   }
 
-  const onSave = async (e: React.FormEvent) => {
+  const onSave = async (e: React.FormEvent<HTMLFormElement>) => { // ✅ 이벤트 타입
     e.preventDefault()
     const user = auth.currentUser
     if (!user) return
 
     setSaving(true)
     try {
-      // 기본(이름/나이/역할) 페이로드 — 기존 로직 유지
-      const basePayload: Record<string, any> = {
+      // ✅ 기본 페이로드 타입 명시
+      type BasePayload = {
+        name?: string
+        age?: number
+        role: 'student'
+      }
+      const basePayload: BasePayload = {
         name: name.trim() || undefined,
         age: age === '' ? undefined : Number(age),
         role: 'student',
       }
 
-      // 🔥 분류 저장 규칙
-      // - 대분류 미선택(''): major/middle/minor 모두 제거
-      // - 대분류만 선택: major 저장, middle/minor 제거
-      // - 대+중 선택: major/middle 저장, minor 제거
-      // - 대+중+소 선택: 모두 저장
-      const categoryUpdates: Record<string, any> = {}
+      // ✅ 분류 업데이트 타입 (deleteField() 지원)
+      type CategoryUpdates = {
+        major?: string | FieldValue
+        middle?: string | FieldValue
+        minor?: string | FieldValue
+      }
+      const categoryUpdates: CategoryUpdates = {}
 
       if (!major) {
-        // 아무 분류도 원치 않음 → 모두 삭제
         categoryUpdates.major = deleteField()
         categoryUpdates.middle = deleteField()
         categoryUpdates.minor = deleteField()
       } else {
-        // 대분류는 선택됨
         categoryUpdates.major = major
 
         if (!middle) {
-          // 중분류 미선택 → 중/소 삭제
           categoryUpdates.middle = deleteField()
           categoryUpdates.minor = deleteField()
         } else {
-          // 중분류 선택됨
           categoryUpdates.middle = middle
 
           if (!minor) {
-            // 소분류 미선택 → 소만 삭제
             categoryUpdates.minor = deleteField()
           } else {
-            // 소분류까지 선택됨
             categoryUpdates.minor = minor
           }
         }

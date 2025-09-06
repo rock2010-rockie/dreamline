@@ -13,7 +13,17 @@ import {
   where,
   limit as fsLimit,
 } from 'firebase/firestore'
-import styles from './student.module.css' // 기존 css에 몇 개 클래스만 추가해서 씀
+import styles from './student.module.css'
+
+// Firestore 사용자 문서 타입(필요 필드만 정의)
+type UserDoc = {
+  major?: string
+  name?: string
+  role?: string
+  career?: string
+  special?: string
+  bio?: string
+}
 
 interface Mentor {
   id: string
@@ -27,7 +37,6 @@ export default function StudentHomePage() {
   const [loading, setLoading] = useState(true)
   const [mentors, setMentors] = useState<Mentor[]>([])
 
-
   useEffect(() => {
     const run = async () => {
       try {
@@ -40,8 +49,8 @@ export default function StudentHomePage() {
         // 내 프로필에서 대분류(major) 읽기
         const meRef = doc(db, 'users', user.uid)
         const meSnap = await getDoc(meRef)
-        const myMajor = meSnap.exists() ? (meSnap.data().major as string | undefined) : undefined
-
+        const meData = (meSnap.data() as UserDoc | undefined) ?? undefined
+        const myMajor: string | undefined = meData?.major
 
         // 해당 대분류 멘토 추천 (멘토가 mentors 컬렉션이면 그 이름으로 변경)
         const base = collection(db, 'users')
@@ -51,12 +60,12 @@ export default function StudentHomePage() {
 
         const snap = await getDocs(q)
         const rows: Mentor[] = snap.docs.map(d => {
-          const data = d.data() as any
+          const data = d.data() as UserDoc
           return {
             id: d.id,
-            name: data.name || '이름 없음',
+            name: data.name ?? '이름 없음',
             major: data.major,
-            bio: data.career || data.special || data.bio || '',
+            bio: data.career ?? data.special ?? data.bio ?? '',
           }
         })
         setMentors(rows)
@@ -71,7 +80,6 @@ export default function StudentHomePage() {
 
   const goFind = () => router.push('/student/search') // ← 기존 검색 화면으로 이동
   const goDetail = (id: string) => router.push(`/mentor/detail/${id}`) // 기존 상세/요청 경로
-
 
   return (
     <div className={styles.pageWrap}>

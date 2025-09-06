@@ -7,6 +7,8 @@ import { collection, getDocs, query, where } from 'firebase/firestore'
 import Link from 'next/link'
 import styles from './result.module.css'
 
+type TrustLevel = '' | '낮음' | '중간' | '높음'
+
 interface Mentor {
   id: string
   name: string
@@ -21,37 +23,67 @@ interface Mentor {
   role?: string
 }
 
+// Firestore에서 읽어오는 원본 사용자 문서 타입(필요 필드만)
+type UserDoc = {
+  name?: string
+  field?: string
+  major?: string
+  middle?: string
+  minor?: string
+  ratingAvg?: number
+  ratingSum?: number
+  ratingCount?: number
+  role?: string
+}
+
 export default function MentorResultPage() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const major = searchParams.get('major') || ''
   const middle = searchParams.get('middle') || ''
   const minor = searchParams.get('minor') || ''
-  const trust = (searchParams.get('trustLevel') || searchParams.get('trust') || '').trim() // '낮음' | '중간' | '높음' | ''
+  const trust = (
+    (searchParams.get('trustLevel') || searchParams.get('trust') || '').trim()
+  ) as TrustLevel
 
   const [mentors, setMentors] = useState<Mentor[]>([])
   const [noResult, setNoResult] = useState(false)
 
-  const fetchMentors = async () => {
+  const fetchMentors = async (): Promise<void> => {
     try {
       // 1) 인덱스 없이 안전한 최소 쿼리: role == mentor
       const qLite = query(collection(db, 'users'), where('role', '==', 'mentor'))
       const snap = await getDocs(qLite)
-      const all: Mentor[] = snap.docs.map(d => ({ id: d.id, ...(d.data() as any) }))
+
+      const all: Mentor[] = snap.docs.map((d) => {
+        const data = d.data() as UserDoc
+        return {
+          id: d.id,
+          name: data.name ?? '이름 없음',
+          field: data.field,
+          major: data.major,
+          middle: data.middle,
+          minor: data.minor,
+          ratingAvg: data.ratingAvg,
+          ratingSum: data.ratingSum,
+          ratingCount: data.ratingCount,
+          role: data.role,
+        }
+      })
 
       // 2) 클라이언트 필터 (major/middle/minor/ratingAvg)
-      let min = 0, max = 5
+      let min = 0
+      let max = 5
       if (trust === '낮음') { min = 0; max = 2 }
       else if (trust === '중간') { min = 2; max = 4 }
       else if (trust === '높음') { min = 4; max = 5 }
 
-      const filtered = all.filter(m => {
+      const filtered = all.filter((m) => {
         if (m.major !== major) return false
         if (middle && m.middle !== middle) return false
         if (minor && m.minor !== minor) return false
 
         if (trust) {
-          // ratingAvg가 없으면 ratingSum/ratingCount로 보정
           const avg =
             typeof m.ratingAvg === 'number'
               ? m.ratingAvg
