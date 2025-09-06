@@ -1,7 +1,7 @@
 'use client'
 
 import { useSearchParams, useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { db } from '@/lib/firebase'
 import { collection, getDocs, query, where } from 'firebase/firestore'
 import Link from 'next/link'
@@ -36,7 +36,7 @@ type UserDoc = {
   role?: string
 }
 
-export default function MentorResultPage() {
+function MentorResultInner() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const major = searchParams.get('major') || ''
@@ -136,5 +136,13 @@ export default function MentorResultPage() {
         </div>
       )}
     </div>
+  )
+}
+
+export default function MentorResultPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: 16 }}>결과 불러오는 중…</div>}>
+      <MentorResultInner />
+    </Suspense>
   )
 }
