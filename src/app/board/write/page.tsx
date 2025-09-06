@@ -9,12 +9,7 @@ import {
   getDoc,
   serverTimestamp,
 } from 'firebase/firestore'
-import {
-  ref,
-  uploadBytes,
-  getDownloadURL,
-} from 'firebase/storage'
-import { auth, db, storage } from '@/lib/firebase'
+import { auth, db } from '@/lib/firebase'
 import { categoryData } from '@/data/categoryData'
 import styles from './write.module.css'
 
@@ -27,7 +22,6 @@ export default function WritePage() {
   const [minor, setMinor] = useState('')
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
-  const [image, setImage] = useState<File | null>(null)
 
   const majorList = Object.keys(categoryData)
   const middleList = major ? Object.keys(categoryData[major] || {}) : []
@@ -37,23 +31,14 @@ export default function WritePage() {
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
       if (!user) return
-
       const docRef = doc(db, 'users', user.uid)
       const snapshot = await getDoc(docRef)
       const data = snapshot.data()
-
       if (data?.role === 'mentor') setRole('mentor')
       else setRole('student')
     })
-
     return () => unsubscribe()
   }, [])
-
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files?.[0]) {
-      setImage(e.target.files[0])
-    }
-  }
 
   const handleSubmit = async () => {
     if (!role || !title || !content || !major || !middle || !minor) {
@@ -67,17 +52,6 @@ export default function WritePage() {
       const user = auth.currentUser
       if (!user) return alert('로그인이 필요합니다.')
 
-      let imageUrl = ''
-
-      if (image) {
-        const imageRef = ref(
-          storage,
-          `boardImages/${Date.now()}_${image.name}`
-        )
-        await uploadBytes(imageRef, image)
-        imageUrl = await getDownloadURL(imageRef)
-      }
-
       const userDoc = await getDoc(doc(db, 'users', user.uid))
       const userData = userDoc.data()
 
@@ -88,7 +62,6 @@ export default function WritePage() {
         minor,
         title,
         content,
-        imageUrl,
         uid: user.uid,
         authorName: userData?.name || '익명',
         authorRole: userData?.role || '학생',
@@ -104,6 +77,7 @@ export default function WritePage() {
 
   return (
     <div className={styles.container}>
+      {/* 상단바 */}
       <div className={styles.header}>
         <button className={styles.backBtn} onClick={() => router.back()}>
           <img src="/back.svg" alt="뒤로가기" />
@@ -113,88 +87,97 @@ export default function WritePage() {
         </button>
       </div>
 
-      {/* 게시글 유형 자동 텍스트 표시 */}
+      {/* 게시글 유형 */}
       {role && (
         <div className={styles.fixedCategory}>
           게시글 유형 · {role === 'mentor' ? '멘토소식' : '궁금해요'}
         </div>
       )}
 
-      {/* 분류 선택 */}
-      <select
-        className={styles.select}
-        value={major}
-        onChange={(e) => {
-          setMajor(e.target.value)
-          setMiddle('')
-          setMinor('')
+      {/* ✅ 분류 3가지 한 줄 배치 */}
+      <div
+        className={styles.categoryRow}
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr 1fr',
+          gap: '8px',
+          marginTop: '12px',
+          marginBottom: '12px',
         }}
       >
-        <option value="">대분류 선택</option>
-        {majorList.map((m) => (
-          <option key={m} value={m}>
-            {m.replace(/^\d+\./, '')}
-          </option>
-        ))}
-      </select>
+        <select
+          className={styles.select}
+          value={major}
+          onChange={(e) => {
+            setMajor(e.target.value)
+            setMiddle('')
+            setMinor('')
+          }}
+          aria-label="대분류 선택"
+        >
+          <option value="">대분류 선택</option>
+          {majorList.map((m) => (
+            <option key={m} value={m}>
+              {m.replace(/^\d+\./, '')}
+            </option>
+          ))}
+        </select>
 
-      <select
-        className={styles.select}
-        value={middle}
-        onChange={(e) => {
-          setMiddle(e.target.value)
-          setMinor('')
-        }}
-      >
-        <option value="">중분류 선택</option>
-        {middleList.map((m) => (
-          <option key={m} value={m}>
-            {m.replace(/^\d+\./, '')}
-          </option>
-        ))}
-      </select>
+        <select
+          className={styles.select}
+          value={middle}
+          onChange={(e) => {
+            setMiddle(e.target.value)
+            setMinor('')
+          }}
+          aria-label="중분류 선택"
+          disabled={!major}
+        >
+          <option value="">중분류 선택</option>
+          {middleList.map((m) => (
+            <option key={m} value={m}>
+              {m.replace(/^\d+\./, '')}
+            </option>
+          ))}
+        </select>
 
-      <select
-        className={styles.select}
-        value={minor}
-        onChange={(e) => setMinor(e.target.value)}
-      >
-        <option value="">소분류 선택</option>
-        {minorList.map((m) => (
-          <option key={m} value={m}>
-            {m.replace(/^\d+\./, '')}
-          </option>
-        ))}
-      </select>
+        <select
+          className={styles.select}
+          value={minor}
+          onChange={(e) => setMinor(e.target.value)}
+          aria-label="소분류 선택"
+          disabled={!middle}
+        >
+          <option value="">소분류 선택</option>
+          {minorList.map((m) => (
+            <option key={m} value={m}>
+              {m.replace(/^\d+\./, '')}
+            </option>
+          ))}
+        </select>
+      </div>
 
-      <input
-        className={styles.titleInput}
-        placeholder="제목을 입력해주세요."
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-      />
-
-      <hr className={styles.divider} />
-
-      <textarea
-        className={styles.contentInput}
-        placeholder="여기를 눌러 새로운 소식을 남겨보세요."
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
-      />
-
-      <div className={styles.imageUploadContainer}>
-        <label htmlFor="imageUpload">
-          <img src="/upload-image.svg" alt="이미지 업로드" />
-        </label>
+      {/* 제목 + 구분선 + 내용 (선 1개로만 구분) */}
+      <div className={styles.fields}>
         <input
-          type="file"
-          id="imageUpload"
-          accept="image/*"
-          onChange={handleImageUpload}
-          style={{ display: 'none' }}
+          className={styles.titleInput}
+          placeholder="제목을 입력해주세요."
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+        />
+
+        {/* ✅ 선 하나 */}
+        <hr className={styles.singleDivider} />
+
+        <textarea
+          className={styles.contentInput}
+          placeholder="여기를 눌러 새로운 소식을 남겨보세요."
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
         />
       </div>
+
+      {/* 이미지 업로드는 없음 */}
     </div>
   )
 }

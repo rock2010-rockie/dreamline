@@ -22,6 +22,9 @@
   border: 1px solid #ccc;
   border-radius: 10px;
   background: white;
+
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .avatar {
@@ -32,9 +35,21 @@
   font-weight: bold;
   font-size: 15px;
 }
-
-.sub {
-  color: gray;
-  font-size: 12px;
+.content {
+  flex: 1 1 auto;
+  min-width: 0;        /* 핵심! flex 아이템 수축 허용 */
+  overflow: hidden;    /* 내부 텍스트가 박스 밖으로 못 나가게 */
+  cursor: pointer;
 }
 
+.sub {
+  font-size: 13px;
+  color: #666;
+
+  display: block;             /* block 필수 */
+  white-space: nowrap;        /* 한 줄로 고정 */
+  overflow: hidden;           /* 넘치면 숨기기 */
+  text-overflow: ellipsis;    /* 말줄임 (…) 표시 */
+  width: 100%;                /* 부모 안에서 꽉 채움 */
+  box-sizing: border-box;     /* padding 포함 폭 계산 */
+}

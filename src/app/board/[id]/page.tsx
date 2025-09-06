@@ -199,9 +199,7 @@ export default function PostDetailPage() {
       <h2 className={styles.title}>{post.title}</h2>
 
       {/* 이미지 */}
-      {post.imageUrl && (
-        <img src={post.imageUrl} alt="첨부 이미지" className={styles.image} />
-      )}
+     
 
       {/* 본문 */}
       <p className={styles.content}>{post.content}</p>

@@ -3,14 +3,22 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { auth, db } from '@/lib/firebase'
-import { collection, query, where, getDocs } from 'firebase/firestore'
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  orderBy,
+  limit,
+} from 'firebase/firestore'
 import styles from './chatList.module.css'
 
 interface ChatItem {
   id: string           // chatId
-  otherUserId: string  // ✅ 상대방 uid 추가
+  otherUserId: string  // 상대방 uid
   otherUserName: string
   otherUserRole: '멘토' | '학생'
+  lastMessage?: string
 }
 
 export default function ChatListPage() {
@@ -50,11 +58,25 @@ export default function ChatListPage() {
         )
         const otherUser = otherUserSnap.docs[0]?.data()
 
+        // ✅ 마지막 메시지 가져오기 (+ 글자수 제한)
+        const messagesRef = collection(db, 'chats', docSnap.id, 'messages')
+        const lastMsgQuery = query(messagesRef, orderBy('timestamp', 'desc'), limit(1))
+        const lastMsgSnap = await getDocs(lastMsgQuery)
+        const lastMsgData = lastMsgSnap.docs[0]?.data()
+
+        let lastMessage = lastMsgData?.text || ''
+
+        // ✅ 30자까지만 표시하고 넘치면 말줄임
+        if (lastMessage.length > 25) {
+          lastMessage = lastMessage.slice(0, 25) + '…'
+        }
+
         results.push({
-          id: docSnap.id, // chatId
-          otherUserId: otherId, // ✅ 저장
+          id: docSnap.id,
+          otherUserId: otherId,
           otherUserName: otherUser?.name || '알 수 없음',
           otherUserRole: otherUser?.role || '학생',
+          lastMessage,
         })
       }
 
@@ -77,15 +99,15 @@ export default function ChatListPage() {
             <div
               className={styles.avatar}
               onClick={(e) => {
-                e.stopPropagation() // 부모 onClick 막기
+                e.stopPropagation()
                 if (userRole === '학생') {
-                  router.push(`mentor/${chat.otherUserId}`)
+                  router.push(`/mentor/${chat.otherUserId}`)
                 } else {
                   router.push(`/student/mentor/${chat.otherUserId}`)
                 }
               }}
               style={{ cursor: 'pointer' }}
-            > 
+            >
               👤
             </div>
 
@@ -95,7 +117,11 @@ export default function ChatListPage() {
               style={{ cursor: 'pointer', flex: 1 }}
             >
               <div className={styles.name}>{chat.otherUserName}</div>
-              <div className={styles.sub}>새 채팅을 시작해 보세요!</div>
+              <div className={styles.sub}>
+                {chat.lastMessage
+                  ? chat.lastMessage
+                  : '새 채팅을 시작해 보세요!'}
+              </div>
             </div>
           </li>
         ))}

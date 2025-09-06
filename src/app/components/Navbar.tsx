@@ -30,6 +30,11 @@ export default function Navbar() {
     fetchUserRole()
   }, [])
 
+  // ✅ 채팅방(/chat/무언가)일 때 Navbar 숨기기
+  if (pathname.startsWith('/chat/')) {
+    return null
+  }
+
   return (
     <nav className={styles.navbar}>
       <Link href={homePath}>
