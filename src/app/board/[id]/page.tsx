@@ -234,6 +234,21 @@ export default function PostDetailPage() {
       {/* 구분선 */}
       <hr className={styles.sectionDivider} />
 
+      {/* ====== ⬇⬇⬇ 순서만 변경: 입력창 먼저, 목록 나중에 ⬇⬇⬇ ====== */}
+
+      {/* 댓글 입력창 */}
+      <div className={styles.commentInputBox}>
+        <input
+          value={comment}
+          onChange={(e) => setComment(e.target.value)}
+          placeholder="다양한 의견을 남겨주세요!"
+          className={styles.commentInput}
+        />
+        <button onClick={handleCommentSubmit} className={styles.submitBtn}>
+          등록
+        </button>
+      </div>
+
       {/* 댓글 목록 */}
       {comments.map((c) => (
         <div key={c.id} className={styles.comment}>
@@ -254,18 +269,7 @@ export default function PostDetailPage() {
         </div>
       ))}
 
-      {/* 댓글 입력창 */}
-      <div className={styles.commentInputBox}>
-        <input
-          value={comment}
-          onChange={(e) => setComment(e.target.value)}
-          placeholder="다양한 의견을 남겨주세요!"
-          className={styles.commentInput}
-        />
-        <button onClick={handleCommentSubmit} className={styles.submitBtn}>
-          등록
-        </button>
-      </div>
+      {/* ====== ⬆⬆⬆ 여기까지 위치만 교체 ⬆⬆⬆ ====== */}
     </div>
   )
 }

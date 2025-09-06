@@ -151,7 +151,7 @@
   position: fixed;       /* 화면 기준 고정 */
   left: 0;
   right: 0;
-  bottom: 1;             /* ✅ 맨 아래 */
+  bottom: 0;             /* ✅ 맨 아래 */
   width: 100%;
   height: 56px;          /* 필요 시 조절 */
   display: flex;
