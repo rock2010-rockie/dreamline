@@ -3,6 +3,7 @@
   flex-direction: column;
   height: 100svh; /* 모바일 주소창/키보드 대응 */
   background: white;
+  transform: none !important;
 }
 
 /* 헤더 */

@@ -16,10 +16,6 @@ type StudentType = {
   minor?: string
 }
 
-// ✅ 앞 숫자와 점만 제거하는 함수
-const removeNumberPrefix = (str?: string) => {
-  return str?.replace(/^\d+\./, '') || ''
-}
 
 export default function StudentDetail() {
   const param = useParams() as { id: string }
@@ -66,7 +62,7 @@ export default function StudentDetail() {
         <div className={styles.icon}>👤</div>
         <h2 className={styles.name}>{student.name}</h2>
         <p className={styles.category}>
-          관심 분야: {removeNumberPrefix(student.major)} / {removeNumberPrefix(student.middle)} / {removeNumberPrefix(student.minor)}
+          관심 분야: {student.major} / {student.middle} / {student.minor}
         </p>
         <p className={styles.age}>나이 - {student.age}</p>
       </div>
