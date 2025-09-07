@@ -1,7 +1,7 @@
 .container {
   display: flex;
   flex-direction: column;
-  align-items: center;
+ 
   padding: 24px;
  
 }
@@ -56,5 +56,5 @@
   margin: 0 8px 0 4px;
   cursor: pointer;
 margin: 0;              /* 여백 없애기 */
- right: 0;     /* 오른쪽만 살짝 띄우기 */
+ left: 3;     /* 오른쪽만 살짝 띄우기 */
 }
