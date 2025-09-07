@@ -56,5 +56,5 @@
   margin: 0 8px 0 4px;
   cursor: pointer;
 margin: 0;              /* 여백 없애기 */
-  padding: 0 8px 0 0;     /* 오른쪽만 살짝 띄우기 */
+ right: 0;     /* 오른쪽만 살짝 띄우기 */
 }
