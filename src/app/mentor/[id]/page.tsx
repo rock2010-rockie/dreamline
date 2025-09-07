@@ -5,7 +5,7 @@ import { useParams,useRouter } from 'next/navigation'
 import { doc, getDoc, addDoc, collection } from 'firebase/firestore'
 import { db, auth } from '@/lib/firebase'
 import styles from './studentDetail.module.css'
-import Image from 'next/image'   // ✅ 추가
+
 
 type StudentType = {
   id: string
