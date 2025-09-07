@@ -1,64 +1,58 @@
+/* 페이지 컨테이너: .back의 기준이 되도록 relative 추가,
+   데스크톱에서 보기 좋게 가운데 정렬 + 위쪽 여백(헤더 밑으로 내리기) */
 .container {
+  position: relative;              /* ← .back absolute 기준 */
   display: flex;
   flex-direction: column;
- 
-  padding: 24px;
- 
+  gap: 16px;                       /* 카드/버튼 간 간격 */
+  padding: 64px 24px 24px;         /* ↑ 위로 너무 붙으면 64px을 조절 */
+  max-width: 1200px;               /* 넓은 화면에서 너무 퍼지지 않게 상한(원하면 지워도 됨) */
+  margin: 0 auto;                  /* 데스크톱에서 중앙 정렬 */
+  background: #fff;
 }
 
-.card {
-  background-color: white;
-  padding: 24px;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  width: 90%;
-  max-width: 360px;
-  text-align: center;
-   align-items: center;
-}
-
-.icon {
-  font-size: 32px;
-  margin-bottom: 8px;
-}
-
-.name {
-  font-size: 20px;
-  font-weight: bold;
-  margin-bottom: 12px;
-}
-
-.category {
-  font-size: 14px;
-  color: #333;
-  margin-bottom: 8px;
-}
-
-.age {
-  font-size: 14px;
-  color: #333;
-}
-
-.button {
-  margin-top: 24px;
-  background-color: #7B61FF;
-  color: white;
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-weight: bold;
-  border: none;
-  cursor: pointer;
-}
-
+/* 뒤로가기: 항상 좌상단 고정 */
 .back {
-  position: absolute !important; /* ← 핵심 */
-  left: 12px;                    /* 왼쪽에 붙임 */
-  top: 12px;                     /* 위에 붙임 */
-  margin: 0 !important;          /* 중앙정렬용 margin 제거 */
+  position: absolute;
+  left: 16px;                      /* 왼쪽 붙이기 */
+  top: 16px;                       /* 위쪽 붙이기 */
+  margin: 0;
   background: none;
   border: none;
   font-size: 20px;
   cursor: pointer;
-  width: 44px; height: 44px;     /* 터치 영역 확보(선택) */
+
+  width: 44px; height: 44px;       /* 터치 영역 */
   display: inline-flex; align-items: center; justify-content: center;
 }
+
+/* 카드: 버튼과 같은 폭으로 쫙 — 핵심은 width:100% + max-width 제거 */
+.card {
+  width: 100%;                     /* ← 버튼과 동일 폭 */
+  /* max-width: 360px;  ← 이 줄이 카드 폭을 막고 있었음. 반드시 제거! */
+  background-color: #fff;
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+/* 버튼: 카드와 같은 폭(컨테이너 폭 100%) */
+.button {
+  display: block;
+  width: 100%;                     /* ← 카드와 동일 폭 */
+  height: 44px;
+  margin-top: 8px;
+
+  background-color: #7B61FF;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* 나머지 텍스트 스타일은 그대로 */
+.icon { font-size: 32px; margin-bottom: 8px; }
+.name { font-size: 20px; font-weight: bold; margin-bottom: 12px; }
+.category, .age { font-size: 14px; color: #333; }
