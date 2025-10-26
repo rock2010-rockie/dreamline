@@ -178,7 +178,7 @@ export default function WritePage() {
         />
       </div>
 
-      {/* 이미지 업로드는 없음 */}
+     
     </div>
   )
 }

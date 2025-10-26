@@ -10,7 +10,7 @@ import { auth, db } from '@/lib/firebase'
 import { useRouter } from 'next/navigation'
 
 // categoryData를 딕셔너리로 사용할 때의 타입
-type CategoryDict = {
+type CategoryDict = { 
   [major: string]: { [middle: string]: string[] }
 }
 const dict = categoryData as unknown as CategoryDict

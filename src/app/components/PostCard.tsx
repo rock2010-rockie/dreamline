@@ -6,8 +6,6 @@ interface Props {
   id: string
   category: string
   title: string
-  // 현재 카드에서 실제로 쓰는 건 minor뿐.
-  // 나머지는 과거 호출부 호환을 위해 "옵셔널"로 둡니다.
   minor?: string
   authorName?: string
   authorRole?: string

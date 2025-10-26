@@ -194,17 +194,16 @@ export default function ChatRoomPage() {
     router.push(`/chat/${chatId}/task`)
   }
 
-  // 진행률 업데이트 (멘토만)
-  const updateProgress = async (value: number) => {
-    if (!isMentor || !chatId) return
-    await updateDoc(doc(db, 'chats', chatId, 'assignment', 'current'), {
-      progress: value,
-    })
-  }
-
-  // ★ 추가: 100%에서 눌러서 완료 처리
+  // ✅ 완료 처리: 멘토만 가능 + 확인 알림
   const finishAssignment = async () => {
     if (!chatId) return
+    if (!isMentor) {
+      alert('멘토만 과제를 완료할 수 있습니다.')
+      return
+    }
+    const ok = window.confirm('과제를 완료 처리할까요? 완료 후 되돌릴 수 없습니다.')
+    if (!ok) return
+
     await updateDoc(doc(db, 'chats', chatId, 'assignment', 'current'), {
       isCompleted: true,
     })
@@ -276,31 +275,14 @@ export default function ChatRoomPage() {
               <div className={styles.taskTitle}>{assignment.title}</div>
               <div className={styles.taskContent}>{assignment.content}</div>
 
-              {/* 슬라이더 조작 중에는 이동하지 않도록 클릭 버블링 막기 */}
-              <div
-                className={styles.sliderRow}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <span className={styles.sliderValue}>{assignment.progress}</span>
-                <input
-                  type="range"
-                  min={0}
-                  max={100}
-                  step={10}
-                  value={assignment.progress}
-                  onChange={(e) => updateProgress(parseInt(e.target.value))}
-                  disabled={!isMentor}
-                  className={styles.slider}
-                  onClick={(e) => e.stopPropagation()}  // ← 보호
-                />
-              </div>
+              {/* ✅ 진척도(슬라이더/값) UI 완전 제거 */}
 
               <div
                 className={styles.taskPanelFooter}
                 onClick={(e) => e.stopPropagation()}   // ← 버튼 눌러도 페이지 이동 방지
               >
-                {/* ★ 추가: 100% 도달 & 아직 완료 전이면 버튼 노출 */}
-                {assignment.progress === 100 && !assignment.isCompleted && (
+                {/* ✅ 멘토만 완료 버튼 표시, 완료 전일 때만 */}
+                {isMentor && !assignment.isCompleted && (
                   <button
                     onClick={finishAssignment}
                     style={{
